@@ -57,10 +57,12 @@ contract TestFunctionality is Helpers {
         assertEq(stealthAddress.balance, ETH_VALUE, "stealth address balance incorrect");
 
         vm.prank(stealthAddress);
-        (bool success, ) = __SPENDING_ADDRESS.call{ value: ETH_VALUE }("");
+        (bool success,) = __SPENDING_ADDRESS.call{ value: ETH_VALUE }("");
         assertTrue(success, "stealth address withdrawal failed");
         assertEq(stealthAddress.balance, 0, "stealth address balance not zero after withdrawal");
-        assertEq(__SPENDING_ADDRESS.balance, 10 ether + ETH_VALUE, "spending address balance incorrect after withdrawal");
+        assertEq(
+            __SPENDING_ADDRESS.balance, 10 ether + ETH_VALUE, "spending address balance incorrect after withdrawal"
+        );
     }
 
     // Helper to register stealth keys
