@@ -1,8 +1,13 @@
 import { secp256k1 } from "@noble/curves/secp256k1";
-import { bytesToHex } from "@noble/hashes/utils";
 
 function normalizeHex(arg: string): string {
     return arg.startsWith("0x") ? arg.slice(2) : arg;
+}
+
+function bytesToHexString(bytes: Uint8Array): string {
+    return Array.from(bytes)
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
 }
 
 function main(): void {
@@ -24,9 +29,10 @@ function main(): void {
         process.exit(1);
     }
 
-    const shared = secp256k1.getSharedSecret(privHex, pubHex, false);
-    const xy = shared.slice(1);
-    process.stdout.write(`0x${bytesToHex(xy)}`);
+    const shared = secp256k1.getSharedSecret(privHex, pubHex, true);
+    const x = shared.slice(1);
+    const hexOutput = `0x${bytesToHexString(x)}`;
+    process.stdout.write(hexOutput);
 }
 
 main();

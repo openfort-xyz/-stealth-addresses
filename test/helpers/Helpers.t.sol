@@ -3,6 +3,7 @@ pragma solidity 0.8.33;
 
 import { Data } from "../data/Data.t.sol";
 import { Vm } from "lib/forge-std/src/Vm.sol";
+import { LibBytes } from "lib/solady/src/utils/LibBytes.sol";
 
 abstract contract Helpers is Data {
     // ------------------------------------------------------------------------------------
@@ -10,6 +11,11 @@ abstract contract Helpers is Data {
     //                           Helper Functions
     //
     // ------------------------------------------------------------------------------------
+
+    // Fund an address with ETH
+    function _deal(address _to, uint256 _amount) internal {
+        vm.deal(_to, _amount);
+    }
 
     // Compress stealth meta-address from spending and viewing public keys
     function _compressStealthMetaAddress(
@@ -24,14 +30,14 @@ abstract contract Helpers is Data {
     }
 
     // Decode stealth meta-address into spending and viewing public keys
-    function _decodeStealthMetaAddress(bytes calldata _stealthMetaAddress)
+    function _decodeStealthMetaAddress(bytes memory _stealthMetaAddress)
         internal
         pure
-        returns (bytes calldata spendingPublicKey, bytes calldata viewingPublicKey)
+        returns (bytes memory spendingPublicKey, bytes memory viewingPublicKey)
     {
         require(_stealthMetaAddress.length == 66, "invalid stealth meta address length");
-        (spendingPublicKey, viewingPublicKey) =
-        (_stealthMetaAddress[0:33], _stealthMetaAddress[33:_stealthMetaAddress.length]);
+        spendingPublicKey = LibBytes.slice(_stealthMetaAddress, 0, 33);
+        viewingPublicKey = LibBytes.slice(_stealthMetaAddress, 33, 66);
     }
 
     // Compress secp256k1 public key
@@ -53,10 +59,10 @@ abstract contract Helpers is Data {
     // Compute shared secret using ECDH
     function _computeSharedSecret(
         uint256 _ephemeralPrivateKey,
-        bytes calldata _viewingPublicKey
+        bytes memory _viewingPublicKey
     )
         internal
-        returns (bytes32 sharedSecretX, bytes32 sharedSecretY)
+        returns (bytes32 sharedSecretX)
     {
         string memory privKeyHex = vm.toString(bytes32(_ephemeralPrivateKey));
         string memory pubKeyHex = vm.toString(_viewingPublicKey);
@@ -68,12 +74,11 @@ abstract contract Helpers is Data {
         cmd[4] = pubKeyHex;
 
         bytes memory out = vm.ffi(cmd);
-        bytes memory xy = vm.parseBytes(string(out));
-        require(xy.length == 64, "shared secret length");
+        require(out.length == 32, "shared secret length");
 
+        // FFI already converts hex string output to raw bytes, so no parsing needed
         assembly ("memory-safe") {
-            sharedSecretX := mload(add(xy, 0x20))
-            sharedSecretY := mload(add(xy, 0x40))
+            sharedSecretX := mload(add(out, 0x20))
         }
     }
 
@@ -93,7 +98,7 @@ abstract contract Helpers is Data {
         returns (bytes memory stealthPublicKey, address stealthAddress)
     {
         string memory hashHex = vm.toString(_hashedSharedSecretX);
-        string memory spendHex = vm.toString(__SEPNDIG_PUBLIC_KEYS);
+        string memory spendHex = vm.toString(__SPENDING_PUBLIC_KEYS);
         string[] memory cmd = new string[](5);
         cmd[0] = "npx";
         cmd[1] = "tsx";
@@ -102,8 +107,8 @@ abstract contract Helpers is Data {
         cmd[4] = spendHex;
 
         bytes memory out = vm.ffi(cmd);
-        bytes memory raw = vm.parseBytes(string(out));
-        (stealthPublicKey, stealthAddress) = abi.decode(raw, (bytes, address));
+        // FFI already converts hex string output to raw bytes, so no parsing needed
+        (stealthPublicKey, stealthAddress) = abi.decode(out, (bytes, address));
     }
 
     // Create metadata for stealth address transaction
@@ -120,21 +125,32 @@ abstract contract Helpers is Data {
         return abi.encodePacked(_viewTag, _selector, _assetAddress, _amount);
     }
 
-    // Parse stealth meta-address to get stealth private key
-    function _parseStealthMetaAddress(bytes memory _stealthMetaAddress) internal returns (uint256) {
-        bytes memory ephemeralPubKey = vm.envBytes("EPHEMERAL_PUBLIC_KEY");
-
+    // Derive stealth private key from announcement data (Stage 5 & 6 of EIP-5564)
+    // Bob uses his spending and viewing private keys + announcement data to derive stealth private key
+    function _deriveStealthPrivateKey(
+        bytes memory _ephemeralPublicKey,
+        bytes memory _metadata
+    )
+        internal
+        returns (uint256 stealthPrivateKey)
+    {
         string[] memory cmd = new string[](7);
         cmd[0] = "npx";
         cmd[1] = "tsx";
         cmd[2] = "script/detectPayment.ts";
         cmd[3] = vm.toString(bytes32(__SPENDING_PRIVATE_KEYS));
         cmd[4] = vm.toString(bytes32(__VIEWING_PRIVATE_KEYS));
-        cmd[5] = vm.toString(ephemeralPubKey);
-        cmd[6] = vm.toString(_stealthMetaAddress);
+        cmd[5] = vm.toString(_ephemeralPublicKey);
+        cmd[6] = vm.toString(_metadata);
 
         bytes memory out = vm.ffi(cmd);
-        bytes32 stealthPrivateKey = vm.parseBytes32(string(out));
-        return uint256(stealthPrivateKey);
+        // FFI already converts hex string to raw bytes
+        bytes32 stealthPrivKey;
+        assembly ("memory-safe") {
+            stealthPrivKey := mload(add(out, 0x20))
+        }
+
+        // If view tag doesn't match, script returns 0x00...00
+        stealthPrivateKey = uint256(stealthPrivKey);
     }
 }

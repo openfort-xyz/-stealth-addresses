@@ -31,10 +31,7 @@ contract ERC6538Registry is IERC6538Registry {
         INITIAL_DOMAIN_SEPARATOR = _computeDomainSeparator();
     }
 
-    /// @notice Sets the caller's stealth meta-address for the given scheme ID.
-    /// @param schemeId Identifier corresponding to the applied stealth address scheme, e.g. 1 for
-    /// secp256k1, as specified in ERC-5564.
-    /// @param stealthMetaAddress The stealth meta-address to register.
+    /// @inheritdoc IERC6538Registry
     function registerKeys(uint256 schemeId, bytes calldata stealthMetaAddress) external {
         stealthMetaAddressOf[msg.sender][schemeId] = stealthMetaAddress;
         emit StealthMetaAddressSet(msg.sender, schemeId, stealthMetaAddress);

@@ -33,8 +33,8 @@ abstract contract Data is Etch {
 
     // Spending keyspair
     uint256 internal __SPENDING_PRIVATE_KEYS = vm.envUint("SPENDING_PRIVATE_KEYS");
-    bytes internal __SEPNDIG_PUBLIC_KEYS = vm.envBytes("SEPNDIG_PUBLIC_KEYS");
-    address internal __SEPNDIG_ADDRESS = vm.addr(__SPENDING_PRIVATE_KEYS);
+    bytes internal __SPENDING_PUBLIC_KEYS = vm.envBytes("SPENDING_PUBLIC_KEYS");
+    address internal __SPENDING_ADDRESS = vm.addr(__SPENDING_PRIVATE_KEYS);
 
     // Viewing keyspair
     uint256 internal __VIEWING_PRIVATE_KEYS = vm.envUint("VIEWING_PRIVATE_KEYS");
