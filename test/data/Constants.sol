@@ -29,4 +29,7 @@ abstract contract Constants {
 
     // ETH value to transfer
     uint256 internal constant ETH_VALUE = 1 ether;
+
+    // scheme identifier for secp256k1
+    uint8 internal constant SECP256K1_SCHEME_ID = 1;
 }
