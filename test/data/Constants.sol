@@ -32,4 +32,9 @@ abstract contract Constants {
 
     // scheme identifier for secp256k1
     uint8 internal constant SECP256K1_SCHEME_ID = 1;
+
+    // ETH transaction selector
+    bytes4 internal constant ETH_TRANSACTION_SELECTOR = 0xeeeeeeee;
+    // ETH address constant
+    address internal constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 }

@@ -8,6 +8,20 @@ import { IERC6538Registry } from "contracts/interfaces/IERC6538.sol";
 abstract contract Data is Etch {
     // ------------------------------------------------------------------------------------
     //
+    //                                    Structs
+    //
+    // ------------------------------------------------------------------------------------
+
+    // Stealth Address struct
+    struct StealthAddress {
+        uint256 schemeId;
+        bytes stealthAddress;
+        bytes ephemeralPubKey;
+        bytes metadata;
+    }
+
+    // ------------------------------------------------------------------------------------
+    //
     //                                   Storage
     //
     // ------------------------------------------------------------------------------------
