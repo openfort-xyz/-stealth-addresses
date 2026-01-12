@@ -51,7 +51,7 @@ abstract contract Data is Etch {
     uint256 internal __ALICE_PRIVATE_KEYS;
     address internal __ALICE_ADDRESS;
 
-    // ERC20 Mock Token
+    // ERC20 Mock Tokens
     ERC20Mock internal erc20mock;
 
     function setUp() public virtual {

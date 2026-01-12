@@ -78,8 +78,7 @@ contract TestFunctionalityAA is Helpers {
         Call[] memory call = new Call[](1);
         call[0] = _createCall(__SPENDING_ADDRESS, ETH_VALUE, "");
 
-        userOps =
-            _getUserOp(stealthAddress, stealthPrivateKey, _packCallData(mode_1, call), Sponsor_Type.ETH);
+        userOps = _getUserOp(stealthAddress, stealthPrivateKey, _packCallData(mode_1, call), Sponsor_Type.ETH);
 
         _etch7702(stealthAddress, ACCOUNT_IMPLEMENTATION_V9_ADDRESS);
         _relayUserOp(userOps);
@@ -118,7 +117,8 @@ contract TestFunctionalityAA is Helpers {
 
     //     address derivedStealthAddress = vm.addr(stealthPrivateKey);
     //     assertEq(stealthAddress, derivedStealthAddress, "stealth addresses do not match");
-    //     assertEq(IERC20(erc20mock).balanceOf(stealthAddress), ERC20_TOKEN_VALUE, "stealth address balance incorrect");
+    //     assertEq(IERC20(erc20mock).balanceOf(stealthAddress), ERC20_TOKEN_VALUE, "stealth address balance
+    // incorrect");
 
     //     vm.prank(stealthAddress);
     //     IERC20(erc20mock).transfer(__SPENDING_ADDRESS, ERC20_TOKEN_VALUE);
