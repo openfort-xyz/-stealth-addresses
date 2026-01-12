@@ -4,6 +4,7 @@ pragma solidity 0.8.33;
 import { Etch } from "./Etch.t.sol";
 import { IERC5564Announcer } from "contracts/interfaces/IERC5564.sol";
 import { IERC6538Registry } from "contracts/interfaces/IERC6538.sol";
+import { ERC20Mock } from "lib/openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
 
 abstract contract Data is Etch {
     // ------------------------------------------------------------------------------------
@@ -45,6 +46,9 @@ abstract contract Data is Etch {
     uint256 internal __ALICE_PRIVATE_KEYS;
     address internal __ALICE_ADDRESS;
 
+    // ERC20 Mock Token
+    ERC20Mock internal erc20mock;
+
     function setUp() public virtual {
         _ethc();
         _label();
@@ -52,5 +56,7 @@ abstract contract Data is Etch {
         registry = IERC6538Registry(ERC6538_ADDRESS);
 
         (__ALICE_ADDRESS, __ALICE_PRIVATE_KEYS) = makeAddrAndKey("alice");
+
+        erc20mock = new ERC20Mock();
     }
 }

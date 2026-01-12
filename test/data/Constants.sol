@@ -37,4 +37,7 @@ abstract contract Constants {
     bytes4 internal constant ETH_TRANSACTION_SELECTOR = 0xeeeeeeee;
     // ETH address constant
     address internal constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    // ERC20 amount to transfer constant (mock)
+    uint256 internal constant ERC20_TOKEN_VALUE = 100 ether;
 }

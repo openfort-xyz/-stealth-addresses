@@ -4,6 +4,7 @@ pragma solidity 0.8.33;
 import { Data } from "../data/Data.t.sol";
 import { Vm } from "lib/forge-std/src/Vm.sol";
 import { LibBytes } from "lib/solady/src/utils/LibBytes.sol";
+import { IERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 abstract contract Helpers is Data {
     // ------------------------------------------------------------------------------------
@@ -16,6 +17,23 @@ abstract contract Helpers is Data {
     function _deal(address _to, uint256 _amount) internal {
         vm.deal(_to, _amount);
     }
+
+    // Mint ERC20 tokens to an address
+    function _mint(address _to, uint256 _amount) internal {
+        erc20mock.mint(_to, _amount);
+    }
+
+    // Approve ERC20 tokens from an owner to a spender
+    function _approveToken(address _owner, address _spender, uint256 _amount, IERC20 _token) internal {
+        vm.prank(_owner);
+        IERC20(_token).approve(_spender, _amount);
+    }
+
+    // ------------------------------------------------------------------------------------
+    //
+    //                       Helper Functions ERC5564 & ERC6538
+    //
+    // ------------------------------------------------------------------------------------
 
     // Compress stealth meta-address from spending and viewing public keys
     function _compressStealthMetaAddress(
