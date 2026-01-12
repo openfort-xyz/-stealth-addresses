@@ -6,10 +6,10 @@ import { createKeys } from "./helpers/createKeys";
 //
 // ------------------------------------------------------------------------------------
 
-const main = () => {
-    const keys = createKeys();
+const main = async () => {
+    const keys = await createKeys();
     console.log(keys);
 };
 
 // Call it immediately
-main();
+main().catch(console.error);

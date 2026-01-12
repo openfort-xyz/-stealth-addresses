@@ -14,13 +14,30 @@ jobs:
   check:
     name: Foundry project
     runs-on: ubuntu-latest
+    environment: Foundry_Test
     permissions:
       contents: read
+    env:
+      SPENDING_PRIVATE_KEYS: ${{ secrets.SPENDING_PRIVATE_KEYS }}
+      SPENDING_PUBLIC_KEYS: ${{ secrets.SPENDING_PUBLIC_KEYS }}
+      VIEWING_PRIVATE_KEYS: ${{ secrets.VIEWING_PRIVATE_KEYS }}
+      VIEWING_PUBLIC_KEYS: ${{ secrets.VIEWING_PUBLIC_KEYS }}
+      PAYMASTER_OWNER: ${{ secrets.PAYMASTER_OWNER }}
+      PAYMASTER_MANAGER: ${{ secrets.PAYMASTER_MANAGER }}
+      PAYMASTER_SIGNER: ${{ secrets.PAYMASTER_SIGNER }}
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
           submodules: recursive
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Node dependencies
+        run: npm install
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1

@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.33;
 
+import { IERC6538Registry } from "../interfaces/IERC6538.sol";
+
 /// @notice `ERC6538Registry` contract to map accounts to their stealth meta-address. See
 /// [ERC-6538](https://eips.ethereum.org/EIPS/eip-6538) to learn more.
-contract ERC6538Registry {
-    /// @notice Emitted when an invalid signature is provided to `registerKeysOnBehalf`.
-    error ERC6538Registry__InvalidSignature();
-
+contract ERC6538Registry is IERC6538Registry {
     /// @notice Next nonce expected from `user` to use when signing for `registerKeysOnBehalf`.
     /// @dev `registrant` may be a standard 160-bit address or any other identifier.
     /// @dev `schemeId` is an integer identifier for the stealth address scheme.
@@ -27,46 +26,18 @@ contract ERC6538Registry {
     /// @notice The domain separator used in this contract.
     bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;
 
-    /// @notice Emitted when a registrant updates their stealth meta-address.
-    /// @param registrant The account that registered the stealth meta-address.
-    /// @param schemeId Identifier corresponding to the applied stealth address scheme, e.g. 1 for
-    /// secp256k1, as specified in ERC-5564.
-    /// @param stealthMetaAddress The stealth meta-address.
-    /// [ERC-5564](https://eips.ethereum.org/EIPS/eip-5564) bases the format for stealth
-    /// meta-addresses on [ERC-3770](https://eips.ethereum.org/EIPS/eip-3770) and specifies them as:
-    ///   st:<shortName>:0x<spendingPubKey>:<viewingPubKey>
-    /// The chain (`shortName`) is implicit based on the chain the `ERC6538Registry` is deployed on,
-    /// therefore this `stealthMetaAddress` is just the compressed `spendingPubKey` and
-    /// `viewingPubKey` concatenated.
-    event StealthMetaAddressSet(address indexed registrant, uint256 indexed schemeId, bytes stealthMetaAddress);
-
-    /// @notice Emitted when a registrant increments their nonce.
-    /// @param registrant The account that incremented the nonce.
-    /// @param newNonce The new nonce value.
-    event NonceIncremented(address indexed registrant, uint256 newNonce);
-
     constructor() {
         INITIAL_CHAIN_ID = block.chainid;
         INITIAL_DOMAIN_SEPARATOR = _computeDomainSeparator();
     }
 
-    /// @notice Sets the caller's stealth meta-address for the given scheme ID.
-    /// @param schemeId Identifier corresponding to the applied stealth address scheme, e.g. 1 for
-    /// secp256k1, as specified in ERC-5564.
-    /// @param stealthMetaAddress The stealth meta-address to register.
+    /// @inheritdoc IERC6538Registry
     function registerKeys(uint256 schemeId, bytes calldata stealthMetaAddress) external {
         stealthMetaAddressOf[msg.sender][schemeId] = stealthMetaAddress;
         emit StealthMetaAddressSet(msg.sender, schemeId, stealthMetaAddress);
     }
 
-    /// @notice Sets the `registrant`'s stealth meta-address for the given scheme ID.
-    /// @param registrant Address of the registrant.
-    /// @param schemeId Identifier corresponding to the applied stealth address scheme, e.g. 1 for
-    /// secp256k1, as specified in ERC-5564.
-    /// @param signature A signature from the `registrant` authorizing the registration.
-    /// @param stealthMetaAddress The stealth meta-address to register.
-    /// @dev Supports both EOA signatures and EIP-1271 signatures.
-    /// @dev Reverts if the signature is invalid.
+    /// @inheritdoc IERC6538Registry
     function registerKeysOnBehalf(
         address registrant,
         uint256 schemeId,
@@ -115,7 +86,7 @@ contract ERC6538Registry {
         emit StealthMetaAddressSet(registrant, schemeId, stealthMetaAddress);
     }
 
-    /// @notice Increments the nonce of the sender to invalidate existing signatures.
+    /// @inheritdoc IERC6538Registry
     function incrementNonce() external {
         unchecked {
             nonceOf[msg.sender]++;
@@ -123,8 +94,7 @@ contract ERC6538Registry {
         emit NonceIncremented(msg.sender, nonceOf[msg.sender]);
     }
 
-    /// @notice Returns the domain separator used in this contract.
-    /// @dev The domain separator is re-computed if there's a chain fork.
+    /// @inheritdoc IERC6538Registry
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
         return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : _computeDomainSeparator();
     }
