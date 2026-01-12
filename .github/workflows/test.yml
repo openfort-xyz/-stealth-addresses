@@ -37,7 +37,7 @@ jobs:
           node-version: "20"
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
