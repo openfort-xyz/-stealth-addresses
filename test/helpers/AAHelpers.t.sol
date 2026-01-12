@@ -80,6 +80,32 @@ abstract contract AAHelpers is Data {
             bytes32 userOpHash = IEntryPoint(EP_V9_ADDRESS).getUserOpHash(u[0]);
             (v, r, s) = vm.sign(_pk, userOpHash);
             u[0].signature = abi.encode(uint8(0), abi.encodePacked(r, s, v));
+        } else if (_sponsorType == Sponsor_Type.ERC20) {
+            u[0].paymasterAndData = abi.encodePacked(
+                PAYMASTER_V3_V9_ADDRESS,
+                uint128(1_000_000),
+                uint128(1_000_000),
+                uint8(1) | uint8(1 << 1),
+                uint8(0),
+                type(uint48).max,
+                uint48(0),
+                address(erc20mock),
+                uint128(100_000),
+                uint256(1e18),
+                uint128(100_000),
+                __PAYMASTER_OWNER_ADDRESS
+            );
+
+            bytes32 hash =
+                SignatureCheckerLib.toEthSignedMessageHash(IPaymaster(PAYMASTER_V3_V9_ADDRESS).getHash(1, u[0]));
+
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(__PAYMASTER_SIGNER, hash);
+
+            u[0].paymasterAndData = abi.encodePacked(u[0].paymasterAndData, abi.encodePacked(r, s, v));
+
+            bytes32 userOpHash = IEntryPoint(EP_V9_ADDRESS).getUserOpHash(u[0]);
+            (v, r, s) = vm.sign(_pk, userOpHash);
+            u[0].signature = abi.encode(uint8(0), abi.encodePacked(r, s, v));
         }
 
         return u;
