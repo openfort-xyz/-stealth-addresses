@@ -42,6 +42,11 @@ abstract contract Data is Etch {
     bytes internal __VIEWING_PUBLIC_KEYS = vm.envBytes("VIEWING_PUBLIC_KEYS");
     address internal __VIEWING_ADDRESS = vm.addr(__VIEWING_PRIVATE_KEYS);
 
+    // Paymaster Keys
+    uint256 internal __PAYMASTER_OWNER = vm.envUint("PAYMASTER_OWNER");
+    address internal __PAYMASTER_OWNER_ADDRESS = vm.addr(__PAYMASTER_OWNER);
+    uint256 internal __PAYMASTER_MANAGER = vm.envUint("PAYMASTER_MANAGER");
+    uint256 internal __PAYMASTER_SIGNER = vm.envUint("PAYMASTER_SIGNER");
     // Alice
     uint256 internal __ALICE_PRIVATE_KEYS;
     address internal __ALICE_ADDRESS;

@@ -100,8 +100,10 @@ contract TestFunctionality is Helpers {
         vm.prank(stealthAddress);
         IERC20(erc20mock).transfer(__SPENDING_ADDRESS, ERC20_TOKEN_VALUE);
         assertEq(IERC20(erc20mock).balanceOf(stealthAddress), 0, "stealth address balance incorrect");
-                assertEq(
-            IERC20(erc20mock).balanceOf(__SPENDING_ADDRESS), ERC20_TOKEN_VALUE, "spending address balance incorrect after withdrawal"
+        assertEq(
+            IERC20(erc20mock).balanceOf(__SPENDING_ADDRESS),
+            ERC20_TOKEN_VALUE,
+            "spending address balance incorrect after withdrawal"
         );
     }
 
