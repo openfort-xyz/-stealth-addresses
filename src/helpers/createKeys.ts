@@ -10,23 +10,20 @@ export interface KeyPair {
     publicKey: Hex;
 }
 
+export async function createKeyPair(name: string): Promise<KeyPair> {
+    const privateKey = generatePrivateKey();
+
+    const keyPair: KeyPair = {
+        name: name,
+        privateKey: privateKey,
+        publicKey: await getPublicKeyFromPrivateKey(privateKey),
+    };
+
+    return keyPair;
+}
+
 export async function createKeys(): Promise<KeyPair[]> {
-    const spendingPrivateKey = generatePrivateKey();
-    const viewingPrivateKey = generatePrivateKey();
-
-    const p_spend: KeyPair = {
-        name: "Spending Private Key",
-        privateKey: spendingPrivateKey,
-        publicKey: await getPublicKeyFromPrivateKey(spendingPrivateKey),
-    };
-
-    const p_view: KeyPair = {
-        name: "Viewing Private Key",
-        privateKey: viewingPrivateKey,
-        publicKey: await getPublicKeyFromPrivateKey(viewingPrivateKey),
-    };
-
-    return [p_spend, p_view];
+    return [await createKeyPair("Spending Private Key"), await createKeyPair("Viewing Private Key")];
 }
 
 async function getPublicKeyFromPrivateKey(privateKey: Hex): Promise<Hex> {
