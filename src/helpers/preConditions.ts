@@ -3,12 +3,27 @@ import { foundry } from "viem/chains";
 import { execSync } from "child_process";
 import { addressBook } from "@/data/addressBook";
 import { anvilClient } from "@/clients/anvilClient";
+import { WalletAccounts } from "@/clients/walletsClient";
 import { Address, formatEther, parseEther, type PublicClient} from "viem";
 
 
 export async function sendEth(to: Address, amount: bigint | number | string, publicClient: PublicClient) {
     const value = typeof amount === "bigint" ? amount : parseEther(String(amount));
     const txHash = await anvilClient.sendTransaction({ account: anvilClient.account!, chain: foundry, to, value });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+    if (receipt.status === "success") {
+        console.log(`Transferred ${formatEther(value)} ETH to ${to} : TX Hash: ${txHash}`);
+        const balance = await publicClient.getBalance({ address: to });
+        console.log(`New Balance of ${to}: ${formatEther(balance)} ETH`);
+
+    } else {
+        throw new Error(`Transaction failed: ${txHash}`);
+    }
+}
+
+export async function sendEthFrom(walletAccounts: WalletAccounts, to: Address, amount: bigint | number | string, publicClient: PublicClient) {
+    const value = typeof amount === "bigint" ? amount : parseEther(String(amount));
+    const txHash = await walletAccounts.walletClient.sendTransaction({ account: walletAccounts.walletClient.account!, chain: foundry, to, value });
     const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
     if (receipt.status === "success") {
         console.log(`Transferred ${formatEther(value)} ETH to ${to} : TX Hash: ${txHash}`);

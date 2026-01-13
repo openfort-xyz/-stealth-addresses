@@ -4,7 +4,7 @@ import { constants } from "@/data/constants";
 import { announce } from "@/helpers/erc5564";
 import { getPublicClient } from "@/clients/publicClient";
 import { createMetaData } from "@/helpers/createMetaData";
-import { preConditions, sendEth } from "@/helpers/preConditions";
+import { preConditions, sendEth, sendEthFrom } from "@/helpers/preConditions";
 import { createKeys, createKeyPair, type KeyPair } from "@/helpers/createKeys";
 import { getWalletAccounts, type WalletAccounts } from "@/clients/walletsClient";
 import { computeStealthPublicKeyAndAddress } from "@/helpers/computeStealthPublicKey";
@@ -56,6 +56,7 @@ const main = async () => {
 
     const { stealthPublicKey, stealthAddress } = await computeStealthPublicKeyAndAddress(sharedSecretHash, spendingPublicKey);
     await sendEth(walletAccounts[2].walletClient.account!.address, 0.5, publicClient);
+    await sendEthFrom(walletAccounts[2], stealthAddress, 0.1, publicClient);
     await announce(walletAccounts[2], stealthAddress, walletAccounts[walletAccounts.length - 1].keyPair.publicKey, metaData);
 
     const output = await listener.eventSubscription({
