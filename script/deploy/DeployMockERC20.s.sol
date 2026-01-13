@@ -10,7 +10,6 @@ contract DeployMockERC20 is Script {
     address private CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     function run() public {
-
         vm.startBroadcast();
 
         bytes memory creationCode = abi.encodePacked(type(ERC20Mock).creationCode);

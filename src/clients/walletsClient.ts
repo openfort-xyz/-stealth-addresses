@@ -2,7 +2,7 @@ import "dotenv/config";
 import { foundry } from "viem/chains";
 import { KeyPair } from "@/helpers/createKeys";
 import { privateKeyToAccount } from "viem/accounts";
-import { createWalletClient, Hex, http, type WalletClient } from "viem";
+import { createWalletClient, Hex, http, type WalletClient, publicActions } from "viem";
 
 export interface WalletAccounts {
     keyPair: KeyPair;
@@ -14,7 +14,7 @@ export function createWallet(privateKey: Hex, rpcUrl: string): WalletClient {
         account: privateKeyToAccount(privateKey),
         chain: foundry,
         transport: http(rpcUrl),
-    });
+    }).extend(publicActions);
 }
 export async function getWalletAccounts(keyPairs: KeyPair[], rpcUrl?: string): Promise<WalletAccounts[]> {
     const resolvedRpcUrl = rpcUrl ?? process.env.RPC_URL ?? process.env.RPC_URL_ANVIL;
