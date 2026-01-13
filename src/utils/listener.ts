@@ -1,6 +1,7 @@
 import { subscriptionConfig as cfg } from "./config";
 import { eventsToWatch, type EventDefinition, type LogFormatter } from "./events";
 import { Abi, Address, createPublicClient, getAbiItem, http, type AbiEvent, type Chain } from "viem";
+import { type StealthMetaData } from "@/helpers/parseData";
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 type PaymasterFilter = Address | Address[];
@@ -18,10 +19,10 @@ export class Listener {
         paymaster?: PaymasterFilter;
         rpcUrl?: string;
         fromBlock?: bigint;
-    }): Promise<Record<string, unknown>> {
+    }): Promise<StealthMetaData> {
         const client = this.buildClient(opts.chain, opts.rpcUrl);
         const unsubscribers: Array<() => void> = [];
-        let resolveOnce: (value: Record<string, unknown>) => void = () => {};
+        let resolveOnce: (value: StealthMetaData) => void = () => {};
         let rejectOnce: (error: Error) => void = () => {};
         let resolved = false;
         let timeoutId: NodeJS.Timeout | undefined;
@@ -31,7 +32,7 @@ export class Listener {
             for (const stop of unsubscribers) stop();
         };
 
-        const outputPromise = new Promise<Record<string, unknown>>((resolve, reject) => {
+        const outputPromise = new Promise<StealthMetaData>((resolve, reject) => {
             resolveOnce = resolve;
             rejectOnce = reject;
         });
@@ -56,7 +57,7 @@ export class Listener {
             if (pastLogs.length > 0) {
                 const onLogs = this.onLogsFactory(def, opts.chain.name);
                 onLogs(pastLogs);
-                return (pastLogs[pastLogs.length - 1]?.args ?? {}) as Record<string, unknown>;
+                return (pastLogs[pastLogs.length - 1]?.args ?? {}) as StealthMetaData;
             }
 
             const onLogs = this.onLogsFactory(def, opts.chain.name);
@@ -71,7 +72,7 @@ export class Listener {
                         resolved = true;
                         if (timeoutId) clearTimeout(timeoutId);
                         stopAll();
-                        resolveOnce((logs[0]?.args ?? {}) as Record<string, unknown>);
+                        resolveOnce((logs[0]?.args ?? {}) as StealthMetaData);
                     }
                 },
                 onError: async () => { await sleep(cfg.retryDelayMs); },
