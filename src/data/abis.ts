@@ -193,4 +193,74 @@ const ABI_ERC6538 = [
     }
 ] as const;
 
-export const abis = { ABI_ERC6538 };
+const ABI_ERC5564 = [
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "schemeId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "stealthAddress",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "caller",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "ephemeralPubKey",
+                "type": "bytes"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "metadata",
+                "type": "bytes"
+            }
+        ],
+        "name": "Announcement",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "schemeId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "stealthAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "ephemeralPubKey",
+                "type": "bytes"
+            },
+            {
+                "internalType": "bytes",
+                "name": "metadata",
+                "type": "bytes"
+            }
+        ],
+        "name": "announce",
+        "outputs": [
+
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+] as const;
+
+export const abis = { ABI_ERC6538, ABI_ERC5564 };

@@ -1,6 +1,6 @@
 import { Address, Hex } from "viem";
 
-const SCHEME_ID: BigInt = 1n as bigint;
+const SCHEME_ID: bigint = 1n;
 
 const ETH_TRANSACTION_SELECTOR: Hex = "0xeeeeeeee";
 

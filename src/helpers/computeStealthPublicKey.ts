@@ -21,8 +21,8 @@ export async function computeStealthPublicKeyAndAddress(
     const stealthUncompressed = stealthPoint.toRawBytes(false);
 
     const addrHash = keccak_256(stealthUncompressed.slice(1));
-    const stealthAddress = `0x${bytesToHex(addrHash.slice(12))}` as Address;
-    const stealthPublicKey = `0x${bytesToHex(stealthCompressed)}` as Hex;
+    const stealthAddress = bytesToHex(addrHash.slice(12)) as Address;
+    const stealthPublicKey = bytesToHex(stealthCompressed) as Hex;
 
     return { stealthPublicKey, stealthAddress };
 }

@@ -27,7 +27,6 @@ export async function registerPair(walletAccounts: WalletAccounts[]) {
     const receipt = await anvilClient.waitForTransactionReceipt({ hash: txHash });
 
     if (receipt.status === 'success') {
-        console.log('\n=== UserOperation Executed Successfully ===')
         console.log('Transaction hash:', receipt.transactionHash)
     } else {
         console.log('\n=== Transaction Failed ===')
