@@ -522,6 +522,68 @@ h1 {
   color: var(--ink-900);
 }
 
+.treasury-history {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e6ebf1;
+}
+
+.treasury-history-header {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--ink-700);
+  margin-bottom: 10px;
+}
+
+.treasury-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.treasury-history-empty {
+  font-size: 0.75rem;
+  color: var(--ink-300);
+  text-align: center;
+  padding: 12px 0;
+}
+
+.treasury-tx {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid #e6ebf1;
+}
+
+.treasury-tx-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.treasury-tx-sender {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--ink-700);
+}
+
+.treasury-tx-address {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 0.65rem;
+  color: var(--ink-400);
+}
+
+.treasury-tx-amount {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--brand);
+}
+
 .treasury-backdrop {
   position: fixed;
   inset: 0;
@@ -547,7 +609,38 @@ h1 {
   font-size: 1.05rem;
 }
 
+.back-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--ink-500);
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.back-btn:hover {
+  background: var(--surface-soft);
+  color: var(--ink-700);
+}
+
+.back-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 .request-panel {
+  position: relative;
   display: grid;
   gap: 14px;
   width: 100%;
@@ -702,6 +795,7 @@ h1 {
 }
 
 .activated-panel {
+  position: relative;
   display: none;
   gap: 20px;
   width: 100%;
@@ -1010,18 +1104,13 @@ h1 {
   height: 32px;
 }
 
-.tx-loader-title {
+.tx-loader-status {
   font-family: 'Space Grotesk', 'Manrope', sans-serif;
   font-weight: 700;
   font-size: 1.25rem;
   color: var(--ink-900);
-}
-
-.tx-loader-status {
-  font-size: 0.9rem;
-  color: var(--ink-500);
   text-align: center;
-  min-height: 1.4em;
+  min-height: 1.6em;
 }
 
 .tx-progress-bar {

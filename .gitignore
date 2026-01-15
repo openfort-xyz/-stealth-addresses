@@ -16,3 +16,4 @@ docs/
 package-lock.json
 
 lib/
+session-keys.json
