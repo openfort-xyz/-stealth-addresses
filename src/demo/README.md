@@ -15,6 +15,38 @@ Key benefits:
 - **One-time addresses**: Each payment uses a fresh, unique address
 - **Full control**: Recipients can derive the private key and spend funds normally
 
+## Quick Start
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18+)
+- [Foundry](https://book.getfoundry.sh/getting-started/installation) (for Anvil local node)
+
+### Installation
+
+```bash
+# From the demo directory
+cd src/demo
+
+# Install dependencies
+npm install
+```
+
+### Running the Demo
+
+```bash
+# Start Anvil, deploy contracts, and run the demo
+npm run dev
+```
+
+This command will:
+1. Start a local Anvil node (if not already running)
+2. Deploy the required contracts (ERC-5564 Announcer, ERC-6538 Registry, Mock ERC20)
+3. Generate keypairs and fund accounts
+4. Start the Vite dev server
+
+Then open [http://localhost:5173](http://localhost:5173) in your browser.
+
 ## How It Works
 
 ### The Flow
@@ -50,6 +82,22 @@ Key benefits:
 | ERC-6538 Registry | `0x6538E6bf4B0eBd30A8Ea093027Ac2422ce5d6538` | Stores stealth meta-addresses for lookup |
 | Mock ERC20 (USDC) | `0x96A65c633DD8855221830b90D09763809378D57e` | Test token for demo |
 
+## Project Structure
+
+```
+src/demo/
+├── scripts/
+│   └── setup.ts        # Anvil setup, contract deployment, key generation
+├── src/
+│   ├── main.js         # Main application logic
+│   └── styles.css      # UI styles
+├── public/
+│   └── session-keys.json  # Generated keys (created by setup)
+├── index.html          # Entry point
+├── vite.config.js      # Vite configuration
+└── package.json
+```
+
 ## Documentation
 
 For detailed technical documentation on ERC-5564 and the cryptographic flow, see:
@@ -64,33 +112,13 @@ For detailed technical documentation on ERC-5564 and the cryptographic flow, see
 - [EIP-6538: Stealth Meta-Address Registry](https://eips.ethereum.org/EIPS/eip-6538)
 - [Vitalik's Stealth Addresses Post](https://vitalik.eth.limo/general/2023/01/20/stealth.html)
 
-## Quick Start
+## Technology Stack
 
-### Prerequisites
+- **Frontend**: Vanilla JS + Vite
+- **Blockchain**: [viem](https://viem.sh/) for Ethereum interactions
+- **Cryptography**: [@noble/curves](https://github.com/paulmillr/noble-curves) for secp256k1 operations
+- **Local Node**: [Anvil](https://book.getfoundry.sh/anvil/) (Foundry)
 
-- [Install Foundry](https://book.getfoundry.sh/getting-started/installation) (for Anvil local node)
+## License
 
-### Installation
-
-```bash
-# From the demo directory
-cd src/demo
-
-# Install dependencies
-npm install
-```
-
-### Running the Demo
-
-```bash
-# Start Anvil, deploy contracts, and run the demo
-npm run dev
-```
-
-This command will:
-1. Start a local Anvil node (if not already running)
-2. Deploy the required contracts (ERC-5564 Announcer, ERC-6538 Registry, Mock ERC20)
-3. Generate keypairs and fund accounts
-4. Start the Vite dev server
-
-Then open [http://localhost:5173](http://localhost:5173) in your browser.
+MIT
