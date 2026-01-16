@@ -118,6 +118,32 @@ body::before {
   align-items: center;
 }
 
+.network-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink-700);
+  background: var(--surface);
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.network-dot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 button {
   border: none;
   font: inherit;
@@ -195,9 +221,9 @@ h1 {
 .questions {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(220, 226, 232, 0.8);
-  border-radius: 24px;
+  border-radius: 0;
   padding: 24px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
 }
 
 .questions-header h2 {
@@ -218,10 +244,10 @@ h1 {
 
 .question-card {
   background: var(--surface);
-  border-radius: 18px;
+  border-radius: 0;
   padding: 16px;
   border: 1px solid #e6ebf1;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -311,7 +337,7 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  justify-content: space-between;
+  justify-content: flex-start;
   animation: rise 0.7s ease 0.2s both;
 }
 
@@ -367,11 +393,19 @@ h1 {
 }
 
 .panel-card.balance {
-  display: grid;
+  display: none;
   gap: 16px;
   background: linear-gradient(135deg, #ffffff 0%, #f0f6f5 100%);
   position: relative;
   z-index: 3;
+}
+
+.request-active .panel-card.balance {
+  display: grid;
+}
+
+.request-active .panel-card.action-card {
+  display: none;
 }
 
 .panel-kicker {
@@ -422,6 +456,16 @@ h1 {
   color: var(--brand);
 }
 
+.explore-arrow {
+  font-size: 1.1em;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.treasury-link:hover .explore-arrow {
+  transform: translateX(2px);
+}
+
 .balance-metric {
   display: flex;
   justify-content: space-between;
@@ -431,6 +475,15 @@ h1 {
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid #e6ebf1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  width: 100%;
+}
+
+.balance-metric:hover {
+  background: var(--surface-soft);
+  border-color: var(--brand);
 }
 
 .balance-metric strong {
@@ -440,6 +493,105 @@ h1 {
 
 .balance-metric strong.is-animating {
   transform: translateY(-2px);
+}
+
+/* Transactions Popover */
+.transactions-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.transactions-popover.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.transactions-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--surface-muted);
+}
+
+.transactions-close {
+  border: none;
+  background: none;
+  color: var(--ink-500);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.transactions-close:hover {
+  background: var(--surface-muted);
+  color: var(--ink-700);
+}
+
+.transactions-list {
+  display: grid;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.transactions-empty {
+  font-size: 0.8rem;
+  color: var(--ink-500);
+  text-align: center;
+  padding: 16px 0;
+}
+
+.transactions-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border-radius: 10px;
+}
+
+.transactions-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.transactions-item-sender {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ink-900);
+}
+
+.transactions-item-address {
+  font-size: 0.7rem;
+  color: var(--ink-500);
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.transactions-item-amount {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--brand);
 }
 
 .treasury-popover {
@@ -645,6 +797,7 @@ h1 {
   gap: 14px;
   width: 100%;
   max-width: 100%;
+  min-height: 580px;
   height: 100%;
   align-self: stretch;
   align-content: center;
@@ -799,6 +952,7 @@ h1 {
   display: none;
   gap: 20px;
   width: 100%;
+  min-height: 580px;
   height: 100%;
   align-content: center;
   justify-items: center;
@@ -808,6 +962,81 @@ h1 {
 
 .activated-panel.visible {
   display: grid;
+}
+
+.confirmation-panel {
+  position: relative;
+  display: none;
+  gap: 24px;
+  width: 100%;
+  min-height: 580px;
+  height: 100%;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  animation: rise 0.5s ease both;
+}
+
+.confirmation-panel.visible {
+  display: grid;
+}
+
+.confirmation-content {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+.confirmation-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e9f3f0 0%, #d9f0ea 100%);
+  display: grid;
+  place-items: center;
+  color: var(--brand);
+  margin-bottom: 8px;
+}
+
+.confirmation-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.confirmation-title {
+  font-family: 'Space Grotesk', 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--ink-900);
+}
+
+.confirmation-subtitle {
+  font-size: 0.95rem;
+  color: var(--ink-500);
+}
+
+.confirmation-details {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface-soft);
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #e6ebf1;
+  margin-top: 8px;
+}
+
+.confirmation-amount {
+  font-family: 'Space Grotesk', monospace;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.request-again-btn {
+  min-width: 200px;
+  padding: 14px 28px;
+  font-size: 0.95rem;
 }
 
 .request-panel.hidden {
@@ -915,6 +1144,13 @@ h1 {
   width: 100%;
   padding: 12px 20px;
   font-size: 0.9rem;
+}
+
+.auto-execution-hint {
+  font-size: 0.75rem;
+  color: var(--ink-500);
+  text-align: center;
+  margin-top: 8px;
 }
 
 .channel-info {

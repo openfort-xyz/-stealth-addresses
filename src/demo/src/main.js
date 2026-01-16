@@ -43,62 +43,58 @@ app.innerHTML = `
       <div class="brand">
         <div class="logo-mark" aria-hidden="true">OF</div>
         <div>
-          <div class="brand-name">OpenFort</div>
-          <div class="brand-sub">Private Payments</div>
+          <div class="brand-name">Openfort</div>
         </div>
       </div>
       <div class="top-actions">
-        <button class="primary" type="button">Privacy Shield Active</button>
+        <div class="network-indicator">
+          <span class="network-dot"></span>
+          Anvil Local Network
+        </div>
       </div>
     </header>
 
     <div class="main-stage">
       <main class="main-grid">
         <section class="hero">
-          <div class="eyebrow">Private Payment System</div>
-          <h1>Private payment system access for enterprise-grade privacy.</h1>
+          <h1>Pay and get paid with private addresses.</h1>
           <p class="hero-copy">
-            Move funds without exposing counterparties. This demo captures the first-step
-            questions before initiating a stealth transfer or private request.
+            Send or request funds without exposing counterparties on-chain—while keeping full internal visibility for treasury and compliance.
           </p>
 
           <div class="questions">
             <div class="questions-header">
-              <h2>FAQ for private payments</h2>
-              <p>Answers to the most common questions about receiving and sending privately.</p>
+              <h2>Private payments: how it works?</h2>
+              <p>Common questions teams ask before enabling stealth transfers and private requests.</p>
             </div>
             <div class="question-grid">
               <div class="question-card">
                 <div class="question-meta">
                   <span class="question-label">Receiving</span>
-                  <span class="question-tag">FAQ</span>
                 </div>
-                <div class="question-value">How do we receive without revealing our address?</div>
-                <div class="question-hint">Share a private meta-address and auto-derive a one-time deposit.</div>
+                <div class="question-value">How do we receive funds without exposing a static address?</div>
+                <div class="question-hint">You share one “private payment identifier.” The sender derives a fresh, one-time deposit address each time—so deposits can’t be linked externally.</div>
               </div>
               <div class="question-card">
                 <div class="question-meta">
                   <span class="question-label">Sending</span>
-                  <span class="question-tag soft">FAQ</span>
                 </div>
-                <div class="question-value">Can we pay vendors without linking transactions?</div>
-                <div class="question-hint">Each transfer uses a fresh Private Payment channel per recipient.</div>
+                <div class="question-value">Can we pay the same recipient repeatedly without linkability?</div>
+                <div class="question-hint">Yes. Every payment generates a new route/address for that recipient, while you retain stable internal references for invoices and accounting.</div>
               </div>
               <div class="question-card">
                 <div class="question-meta">
                   <span class="question-label">Operations</span>
-                  <span class="question-tag">FAQ</span>
                 </div>
                 <div class="question-value">What does our treasury team see and control?</div>
-                <div class="question-hint">Full internal visibility with external unlinkability by default.</div>
+                <div class="question-hint">Full internal visibility of balances and payment history—while external viewers can’t link counterparties.</div>
               </div>
               <div class="question-card">
                 <div class="question-meta">
                   <span class="question-label">Compliance</span>
-                  <span class="question-tag soft">FAQ</span>
                 </div>
                 <div class="question-value">How do we reconcile and report payments?</div>
-                <div class="question-hint">Generate attestations for auditors without exposing counterparties.</div>
+                <div class="question-hint"> Generate privacy-preserving reports/attestations for auditors without exposing counterparties publicly.</div>
               </div>
             </div>
           </div>
@@ -112,19 +108,26 @@ app.innerHTML = `
               <div class="balance-amount" data-role="total-balance">0.00 USDC</div>
               <div class="panel-subtext">
                 <button class="treasury-link" type="button" data-action="show-treasury">
-                  Private Treasury <span data-role="account-count">1</span>
+                  <span class="explore-arrow">›</span> Explore Accounts
                 </button>
-                <span class="separator">•</span>
-                <span data-role="balance-status">Connecting...</span>
               </div>
             </div>
-            <div class="balance-metric">
-              <span data-role="last-sender">Alice</span>
-              <strong data-role="last-amount">+$8,240.00</strong>
+            <button class="balance-metric" type="button" data-action="show-transactions">
+              <span>Recent Transactions</span>
+              <strong data-role="last-amount">+$0.00</strong>
+            </button>
+            <div class="transactions-popover" data-role="transactions-popover" aria-hidden="true">
+              <div class="transactions-popover-header">
+                <span>Recent Transactions</span>
+                <button class="transactions-close" type="button" data-action="close-transactions">&times;</button>
+              </div>
+              <div class="transactions-list" data-role="transactions-list">
+                <div class="transactions-empty">No transactions yet</div>
+              </div>
             </div>
             <div class="treasury-popover" data-role="treasury-popover" aria-hidden="true">
               <div class="treasury-popover-header">
-                <span>Private Treasury</span>
+                <span>Accounts</span>
                 <button class="treasury-close" type="button" data-action="close-treasury">Close</button>
               </div>
               <div class="treasury-list" data-role="treasury-list">
@@ -132,12 +135,6 @@ app.innerHTML = `
                   <div class="treasury-label">Main Account</div>
                   <div class="treasury-address" data-role="treasury-spending-address">—</div>
                   <div class="treasury-balance" data-role="treasury-spending-balance">0.00 USDC</div>
-                </div>
-              </div>
-              <div class="treasury-history" data-role="treasury-history">
-                <div class="treasury-history-header">Recent Transactions</div>
-                <div class="treasury-history-list" data-role="history-list">
-                  <div class="treasury-history-empty">No transactions yet</div>
                 </div>
               </div>
             </div>
@@ -154,32 +151,12 @@ app.innerHTML = `
                     <path d="M5 12h14" />
                   </svg>
                 </span>
-                Request Money
-              </button>
-              <button class="action-btn alt" type="button">
-                <span class="icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 4L9.5 14.5" />
-                    <path d="M20 4l-5 16-3.5-5.5L4 13l16-9z" />
-                  </svg>
-                </span>
-                Send Money
+                Receive Money
               </button>
             </div>
           </div>
 
-          <div class="panel-card">
-            <div class="panel-title">Privacy posture</div>
-            <div class="status-row">
-              <span>Private Payments</span>
-              <span class="status-pill">Enabled</span>
-            </div>
-            <div class="status-row">
-              <span>Unlinkability</span>
-              <span class="status-pill neutral" data-role="unlinkability-status">Pending</span>
-            </div>
-          </div>
-        </aside>
+          </aside>
       </main>
 
       <aside class="request-flow" aria-hidden="true">
@@ -192,20 +169,10 @@ app.innerHTML = `
             Back
           </button>
           <div class="request-header">
-            <div class="panel-title">Private payment request</div>
-            <div class="panel-subtext">Generate a channel to share a stealth meta-address.</div>
+            <div class="panel-title">Receive USDC in a private account</div>
           </div>
           <button class="primary generate-btn" type="button" data-action="generate-channel">
-            Generate New Channel
-          </button>
-          <div class="qr-block" data-role="qr-block">
-            <div class="qr-frame">
-              <img class="qr-image" alt="Stealth meta-address QR code" data-role="qr-code" />
-            </div>
-            <div class="meta-address-display" data-role="meta-address"></div>
-          </div>
-          <button class="primary activate-btn" type="button" data-action="activate-channel" disabled>
-            Activate
+            Receive
           </button>
         </div>
 
@@ -217,20 +184,10 @@ app.innerHTML = `
             </svg>
             Back
           </button>
-          <div class="activated-header">
-            <div class="activated-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-            </div>
-            <div class="panel-title">Payment Channel Activated</div>
-            <div class="panel-subtext">Your private channel is ready to receive funds.</div>
-          </div>
 
           <div class="request-form">
             <div class="form-header">
-              <span class="form-label">Request USDC from OpenFort</span>
+              <span class="form-label">Receive USDC from Openfort</span>
             </div>
             <div class="input-group">
               <div class="input-wrapper">
@@ -246,21 +203,18 @@ app.innerHTML = `
               </div>
             </div>
             <button class="primary request-btn" type="button" data-action="request-usdc" disabled>
-              Request USDC
+              Receive USDC
             </button>
+            <div class="auto-execution-hint">Automatic send execution from Openfort</div>
           </div>
 
           <div class="channel-info">
-            <div class="info-row">
-              <span>Channel Status</span>
-              <span class="status-pill">Active</span>
-            </div>
             <div class="info-row">
               <span>Meta Address</span>
               <span class="address-truncated" data-role="meta-preview">—</span>
             </div>
             <div class="info-row" data-role="stealth-row" style="display: none;">
-              <span>Private Channel</span>
+              <span>Private Account</span>
               <span class="address-truncated" data-role="stealth-preview">—</span>
             </div>
           </div>
@@ -283,13 +237,9 @@ app.innerHTML = `
                 <div class="tx-progress-fill" data-role="tx-progress"></div>
               </div>
               <div class="tx-loader-steps">
-                <div class="tx-step" data-tx-step="mint">
+                <div class="tx-step" data-tx-step="sending">
                   <span class="tx-step-dot"></span>
-                  <span class="tx-step-label">Mint USDC</span>
-                </div>
-                <div class="tx-step" data-tx-step="transfer">
-                  <span class="tx-step-dot"></span>
-                  <span class="tx-step-label">Private Transfer</span>
+                  <span class="tx-step-label">Sending USDC</span>
                 </div>
                 <div class="tx-step" data-tx-step="verify">
                   <span class="tx-step-dot"></span>
@@ -299,6 +249,41 @@ app.innerHTML = `
             </div>
           </div>
 
+        </div>
+
+        <div class="panel-card confirmation-panel" data-role="confirmation-panel">
+          <button class="back-btn" type="button" data-action="go-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5"/>
+              <path d="M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+          </button>
+
+          <div class="confirmation-content">
+            <div class="confirmation-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            </div>
+            <div class="confirmation-title">Transaction Complete</div>
+            <div class="confirmation-subtitle">Your private payment was successful</div>
+
+            <div class="confirmation-details">
+              <div class="info-row">
+                <span>Amount</span>
+                <span class="confirmation-amount" data-role="confirmation-amount">0.00 USDC</span>
+              </div>
+              <div class="info-row">
+                <span>Private Account</span>
+                <span class="address-truncated" data-role="confirmation-address">—</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="primary request-again-btn" type="button" data-action="request-again">
+            Receive again
+          </button>
         </div>
       </aside>
     </div>
@@ -312,9 +297,6 @@ const requestButton = document.querySelector('[data-action="request-money"]');
 const requestFlow = document.querySelector('.request-flow');
 const requestPanel = document.querySelector('.request-panel');
 const generateButton = document.querySelector('[data-action="generate-channel"]');
-const activateButton = document.querySelector('[data-action="activate-channel"]');
-const qrImage = document.querySelector('[data-role="qr-code"]');
-const metaAddressDisplay = document.querySelector('[data-role="meta-address"]');
 const activatedPanel = document.querySelector('[data-role="activated-panel"]');
 const usdcAmountInput = document.querySelector('[data-role="usdc-amount"]');
 const requestUsdcButton = document.querySelector('[data-action="request-usdc"]');
@@ -323,16 +305,15 @@ const stealthPreview = document.querySelector('[data-role="stealth-preview"]');
 const stealthRow = document.querySelector('[data-role="stealth-row"]');
 const totalBalanceDisplay = document.querySelector('[data-role="total-balance"]');
 const balanceStatusDisplay = document.querySelector('[data-role="balance-status"]');
-const lastSenderDisplay = document.querySelector('[data-role="last-sender"]');
 const lastAmountDisplay = document.querySelector('[data-role="last-amount"]');
-const assetCountDisplay = document.querySelector('[data-role="asset-count"]');
-const accountCountDisplay = document.querySelector('[data-role="account-count"]');
-const historyList = document.querySelector('[data-role="history-list"]');
-const unlinkabilityStatus = document.querySelector('[data-role="unlinkability-status"]');
 const treasuryButton = document.querySelector('[data-action="show-treasury"]');
 const treasuryPopover = document.querySelector('[data-role="treasury-popover"]');
 const treasuryBackdrop = document.querySelector('[data-role="treasury-backdrop"]');
 const treasuryCloseButton = document.querySelector('[data-action="close-treasury"]');
+const transactionsButton = document.querySelector('[data-action="show-transactions"]');
+const transactionsPopover = document.querySelector('[data-role="transactions-popover"]');
+const transactionsCloseButton = document.querySelector('[data-action="close-transactions"]');
+const transactionsList = document.querySelector('[data-role="transactions-list"]');
 const treasurySpendingAddress = document.querySelector('[data-role="treasury-spending-address"]');
 const treasurySpendingBalance = document.querySelector('[data-role="treasury-spending-balance"]');
 const treasuryList = document.querySelector('[data-role="treasury-list"]');
@@ -341,10 +322,13 @@ const txLoader = document.querySelector('[data-role="tx-loader"]');
 const txStatus = document.querySelector('[data-role="tx-status"]');
 const txProgress = document.querySelector('[data-role="tx-progress"]');
 const txSteps = {
-  mint: document.querySelector('[data-tx-step="mint"]'),
-  transfer: document.querySelector('[data-tx-step="transfer"]'),
+  sending: document.querySelector('[data-tx-step="sending"]'),
   verify: document.querySelector('[data-tx-step="verify"]'),
 };
+const confirmationPanel = document.querySelector('[data-role="confirmation-panel"]');
+const confirmationAmount = document.querySelector('[data-role="confirmation-amount"]');
+const confirmationAddress = document.querySelector('[data-role="confirmation-address"]');
+const requestAgainButton = document.querySelector('[data-action="request-again"]');
 
 let sessionKeys = null;
 let sessionMetaAddress = '';
@@ -601,15 +585,7 @@ const truncateAddress = (address, startChars = 10, endChars = 8) => {
 };
 
 const updateAssetCount = () => {
-  // Always 1 asset (USDC)
-  if (assetCountDisplay) {
-    assetCountDisplay.textContent = '1';
-  }
-  // Update account count: 1 (Main) + number of saved channels
-  if (accountCountDisplay) {
-    const channelCount = savedChannels.length;
-    accountCountDisplay.textContent = String(1 + channelCount);
-  }
+  // No longer displaying account count in UI
 };
 
 const addTransactionToHistory = (sender, amount, stealthAddr) => {
@@ -626,35 +602,10 @@ const addTransactionToHistory = (sender, amount, stealthAddr) => {
   }
 
   saveHistoryToSession(transactionHistory);
-  updateHistoryDisplay();
-  updateLastTransaction(sender, amount);
+  updateLastTransaction(amount);
 };
 
-const updateHistoryDisplay = () => {
-  if (!historyList) return;
-
-  if (transactionHistory.length === 0) {
-    historyList.innerHTML = '<div class="treasury-history-empty">No transactions yet</div>';
-    return;
-  }
-
-  historyList.innerHTML = transactionHistory
-    .map((tx) => `
-      <div class="treasury-tx">
-        <div class="treasury-tx-info">
-          <span class="treasury-tx-sender">${tx.sender}</span>
-          <span class="treasury-tx-address">${truncateAddress(tx.stealthAddress, 8, 6)}</span>
-        </div>
-        <span class="treasury-tx-amount">+$${formatUsdcNumber(tx.amount)}</span>
-      </div>
-    `)
-    .join('');
-};
-
-const updateLastTransaction = (sender, amount) => {
-  if (lastSenderDisplay) {
-    lastSenderDisplay.textContent = sender;
-  }
+const updateLastTransaction = (amount) => {
   if (lastAmountDisplay) {
     lastAmountDisplay.textContent = `+$${formatUsdcNumber(amount)}`;
   }
@@ -683,7 +634,7 @@ const updateTreasuryDetails = async () => {
       const channelRow = document.createElement('div');
       channelRow.className = 'treasury-item treasury-channel-row';
       channelRow.innerHTML = `
-        <div class="treasury-label">Private Channel ${i + 1}</div>
+        <div class="treasury-label">Private Account ${i + 1}</div>
         <div class="treasury-address" title="${channel.address}">${truncateAddress(channel.address, 10, 8)}</div>
         <div class="treasury-balance">${formatUsdcBalance(balance)} USDC</div>
       `;
@@ -745,10 +696,6 @@ const refreshTreasuryBalances = async () => {
 
   updateTreasuryDetails();
   updateAssetCount();
-
-  if (balanceStatusDisplay) {
-    balanceStatusDisplay.textContent = 'Updated just now';
-  }
 };
 
 const resetChannelState = () => {
@@ -760,14 +707,9 @@ const resetChannelState = () => {
   // Clear session storage for current channel (but keep saved channels)
   sessionStorage.removeItem(SESSION_KEYS_STORAGE);
   sessionStorage.removeItem(SESSION_META_ADDRESS_STORAGE);
+  sessionStorage.removeItem('stealth_ephemeral_key');
 
   // Reset UI elements
-  if (qrImage) {
-    qrImage.src = '';
-  }
-  if (metaAddressDisplay) {
-    metaAddressDisplay.textContent = '';
-  }
   if (metaPreview) {
     metaPreview.textContent = '—';
   }
@@ -778,24 +720,24 @@ const resetChannelState = () => {
     stealthRow.style.display = 'none';
   }
   if (requestPanel) {
-    requestPanel.classList.remove('has-keys', 'hidden');
+    requestPanel.classList.remove('hidden');
   }
   if (activatedPanel) {
     activatedPanel.classList.remove('visible');
   }
-  if (generateButton) {
-    generateButton.textContent = 'Generate New Channel';
-    generateButton.disabled = false;
+  if (confirmationPanel) {
+    confirmationPanel.classList.remove('visible');
   }
-  if (activateButton) {
-    activateButton.disabled = true;
+  if (generateButton) {
+    generateButton.textContent = 'Receive';
+    generateButton.disabled = false;
   }
   if (usdcAmountInput) {
     usdcAmountInput.value = '';
     usdcAmountInput.disabled = false;
   }
   if (requestUsdcButton) {
-    requestUsdcButton.textContent = 'Request USDC';
+    requestUsdcButton.textContent = 'Receive USDC';
     requestUsdcButton.disabled = true;
   }
 };
@@ -826,25 +768,11 @@ const goBack = () => {
     requestButton.disabled = false;
   }
 
+  // Hide confirmation panel if visible
+  hideConfirmationPanel();
+
   // Refresh balances when going back
   refreshTreasuryBalances();
-};
-
-const renderQr = (metaAddress) => {
-  if (!qrImage) {
-    return;
-  }
-
-  const size = 220;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
-    metaAddress,
-  )}`;
-  qrImage.src = qrUrl;
-
-  if (metaAddressDisplay) {
-    metaAddressDisplay.textContent = truncateAddress(metaAddress, 14, 10);
-    metaAddressDisplay.title = metaAddress;
-  }
 };
 
 const isKeysRegistered = async (address) => {
@@ -969,14 +897,7 @@ const decodeAnnouncementFromReceipt = async (txHash) => {
 };
 
 const updateStealthPreview = (newStealthAddress) => {
-  // Update meta address preview
-  if (metaPreview) {
-    const metaValue = sessionMetaAddress ? sessionMetaAddress.replace('st:eth:', '') : '—';
-    metaPreview.textContent = truncateAddress(metaValue, 8, 6);
-    metaPreview.title = metaValue;
-  }
-
-  // Update stealth address preview (only show when we have one)
+  // Show stealth row and update address when we have one
   if (stealthRow) {
     stealthRow.style.display = newStealthAddress ? '' : 'none';
   }
@@ -1029,40 +950,46 @@ const generateChannel = async () => {
 
     sessionMetaAddress = `st:eth:0x${decoded.spendingPublicKey.slice(2)}${decoded.viewingPublicKey.slice(2)}`;
 
+    // Pre-compute stealth address for display
+    const ephemeralKey = await createKeyPair('Ephemeral Key');
+    const sharedSecretX = await computeSharedSecret({ keyPair: ephemeralKey }, decoded.viewingPublicKey);
+    const sharedSecretHash = await hashSharedSecret(sharedSecretX);
+    const { stealthAddress: computedStealthAddress } = await computeStealthPublicKeyAndAddress(
+      sharedSecretHash,
+      decoded.spendingPublicKey,
+    );
+    stealthAddress = computedStealthAddress;
+
+    // Store ephemeral key for later use in transfer
+    sessionStorage.setItem('stealth_ephemeral_key', JSON.stringify(ephemeralKey));
+
     saveKeysToSession(sessionKeys);
     saveMetaAddressToSession(sessionMetaAddress);
     if (openfortKey) {
       saveOpenfortToSession(openfortKey);
     }
 
-    renderQr(sessionMetaAddress);
-    requestPanel.classList.add('has-keys');
-    if (activateButton) {
-      activateButton.disabled = false;
+    // Update meta preview with truncated address
+    if (metaPreview) {
+      metaPreview.textContent = truncateAddress(sessionMetaAddress, 12, 10);
+      metaPreview.title = sessionMetaAddress;
     }
-    generateButton.textContent = 'Channel Ready';
+
+    // Update stealth preview with Private Account address
+    updateStealthPreview(stealthAddress);
+
+    // Go directly to activated panel
+    requestPanel.classList.add('hidden');
+    if (activatedPanel) {
+      activatedPanel.classList.add('visible');
+    }
+
+    generateButton.textContent = 'Request';
   } catch (error) {
     console.error('Failed to generate private channel', error);
     generateButton.disabled = false;
-    generateButton.textContent = 'Generate New Channel';
+    generateButton.textContent = 'Request';
   }
-};
-
-const activateChannel = () => {
-  if (!requestPanel || !activatedPanel) {
-    return;
-  }
-
-  requestPanel.classList.add('hidden');
-  activatedPanel.classList.add('visible');
-
-  // Update Unlinkability status to Enabled
-  if (unlinkabilityStatus) {
-    unlinkabilityStatus.textContent = 'Enabled';
-    unlinkabilityStatus.classList.remove('neutral');
-  }
-
-  updateStealthPreview();
 };
 
 const handleAmountInput = () => {
@@ -1079,7 +1006,6 @@ const openTreasury = () => {
     return;
   }
   updateTreasuryDetails();
-  updateHistoryDisplay();
   treasuryPopover.classList.add('visible');
   treasuryPopover.setAttribute('aria-hidden', 'false');
   treasuryBackdrop.classList.add('visible');
@@ -1094,6 +1020,44 @@ const closeTreasury = () => {
   treasuryPopover.setAttribute('aria-hidden', 'true');
   treasuryBackdrop.classList.remove('visible');
   treasuryBackdrop.setAttribute('aria-hidden', 'true');
+};
+
+const updateTransactionsList = () => {
+  if (!transactionsList) return;
+
+  if (transactionHistory.length === 0) {
+    transactionsList.innerHTML = '<div class="transactions-empty">No transactions yet</div>';
+    return;
+  }
+
+  transactionsList.innerHTML = transactionHistory
+    .map((tx) => `
+      <div class="transactions-item">
+        <div class="transactions-item-info">
+          <span class="transactions-item-sender">${tx.sender}</span>
+          <span class="transactions-item-address">${truncateAddress(tx.stealthAddress, 8, 6)}</span>
+        </div>
+        <span class="transactions-item-amount">+$${formatUsdcNumber(tx.amount)}</span>
+      </div>
+    `)
+    .join('');
+};
+
+const openTransactions = () => {
+  if (!transactionsPopover) {
+    return;
+  }
+  updateTransactionsList();
+  transactionsPopover.classList.add('visible');
+  transactionsPopover.setAttribute('aria-hidden', 'false');
+};
+
+const closeTransactions = () => {
+  if (!transactionsPopover) {
+    return;
+  }
+  transactionsPopover.classList.remove('visible');
+  transactionsPopover.setAttribute('aria-hidden', 'true');
 };
 
 const showTxLoader = () => {
@@ -1149,6 +1113,40 @@ const completeTxLoader = () => {
   });
 };
 
+const showConfirmationPanel = (amount, address) => {
+  // Hide activated panel
+  if (activatedPanel) {
+    activatedPanel.classList.remove('visible');
+  }
+  // Hide request panel
+  if (requestPanel) {
+    requestPanel.classList.add('hidden');
+  }
+  // Show confirmation panel
+  if (confirmationPanel) {
+    confirmationPanel.classList.add('visible');
+  }
+  // Update confirmation details
+  if (confirmationAmount) {
+    confirmationAmount.textContent = `${formatUsdcNumber(amount)} USDC`;
+  }
+  if (confirmationAddress && address) {
+    confirmationAddress.textContent = truncateAddress(address, 8, 6);
+    confirmationAddress.title = address;
+  }
+};
+
+const hideConfirmationPanel = () => {
+  if (confirmationPanel) {
+    confirmationPanel.classList.remove('visible');
+  }
+};
+
+const requestAgain = () => {
+  hideConfirmationPanel();
+  resetChannelState();
+};
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const requestUsdc = async () => {
@@ -1175,15 +1173,10 @@ const requestUsdc = async () => {
     await delay(800);
 
     hideTxLoader();
-    requestUsdcButton.textContent = 'Request Sent';
-    usdcAmountInput.value = '';
-    usdcAmountInput.disabled = false;
 
-    // Reset button after 2 seconds to allow more requests
-    setTimeout(() => {
-      requestUsdcButton.textContent = 'Request USDC';
-      requestUsdcButton.disabled = true; // Will enable when amount is entered
-    }, 2000);
+    // Show confirmation panel instead of resetting
+    await delay(300);
+    showConfirmationPanel(amountValue, stealthAddress);
   } catch (error) {
     console.error('Request failed', error);
     hideTxLoader();
@@ -1215,27 +1208,22 @@ const runRequestFlow = async (amountValue) => {
   const openfortAddress = getAddressFromKeyPair(openfortKey);
   const openfortWallet = createWalletClientForKey(openfortKey);
 
-  // Step 1: Mint USDC (0-33%) - ~1.5 sec
-  setTxStep('mint', 'active');
-  setTxStatus('Minting USDC to OpenFort...');
+  // Step 1: Sending USDC (0-66%)
+  setTxStep('sending', 'active');
+  setTxStatus('Preparing transfer...');
   setTxProgress(10);
   await delay(500);
 
   const amount = parseEther(String(amountValue));
   await mintUsdc(openfortWallet, openfortAddress, amount);
 
-  setTxProgress(25);
-  await delay(600);
-  setTxStep('mint', 'complete');
-  setTxProgress(33);
+  setTxProgress(20);
+  setTxStatus('Computing stealth address...');
   await delay(400);
 
-  // Step 2: Stealth Transfer (33-66%) - ~2 sec
-  setTxStep('transfer', 'active');
-  setTxStatus('Computing stealth address...');
-  await delay(500);
-
-  const ephemeralKey = await createKeyPair('Ephemeral Key');
+  // Use the ephemeral key stored during channel generation
+  const storedEphemeralKey = sessionStorage.getItem('stealth_ephemeral_key');
+  const ephemeralKey = storedEphemeralKey ? JSON.parse(storedEphemeralKey) : await createKeyPair('Ephemeral Key');
 
   const stealthMetaAddress = await getStealthMetaAddress(channelSpendingAddress);
   const decoded = decodeStealthMetaAddress(stealthMetaAddress);
@@ -1243,7 +1231,7 @@ const runRequestFlow = async (amountValue) => {
     throw new Error('Failed to load stealth meta address');
   }
 
-  setTxProgress(40);
+  setTxProgress(30);
   setTxStatus('Generating shared secret...');
   await delay(400);
 
@@ -1264,16 +1252,15 @@ const runRequestFlow = async (amountValue) => {
   );
 
   stealthAddress = computedStealthAddress;
-  updateStealthPreview(stealthAddress);
   updateAssetCount();
 
-  setTxProgress(50);
-  setTxStatus('Transferring to private channel...');
+  setTxProgress(45);
+  setTxStatus('Transferring to private account...');
   await delay(400);
 
   await transferUsdc(openfortWallet, stealthAddress, amount);
 
-  setTxProgress(60);
+  setTxProgress(55);
   setTxStatus('Broadcasting announcement...');
   await delay(300);
 
@@ -1284,7 +1271,7 @@ const runRequestFlow = async (amountValue) => {
     metaData,
   );
 
-  setTxStep('transfer', 'complete');
+  setTxStep('sending', 'complete');
   setTxProgress(66);
   await delay(400);
 
@@ -1376,10 +1363,6 @@ if (generateButton) {
   generateButton.addEventListener('click', generateChannel);
 }
 
-if (activateButton) {
-  activateButton.addEventListener('click', activateChannel);
-}
-
 backButtons.forEach((btn) => {
   btn.addEventListener('click', goBack);
 });
@@ -1403,3 +1386,24 @@ if (treasuryCloseButton) {
 if (treasuryBackdrop) {
   treasuryBackdrop.addEventListener('click', closeTreasury);
 }
+
+if (transactionsButton) {
+  transactionsButton.addEventListener('click', openTransactions);
+}
+
+if (transactionsCloseButton) {
+  transactionsCloseButton.addEventListener('click', closeTransactions);
+}
+
+if (requestAgainButton) {
+  requestAgainButton.addEventListener('click', requestAgain);
+}
+
+// Close transactions popover when clicking outside
+document.addEventListener('click', (e) => {
+  if (transactionsPopover && transactionsPopover.classList.contains('visible')) {
+    if (!transactionsPopover.contains(e.target) && !transactionsButton.contains(e.target)) {
+      closeTransactions();
+    }
+  }
+});
