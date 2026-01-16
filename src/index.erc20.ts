@@ -1,10 +1,11 @@
 import "dotenv/config";
 import { constants } from "@/data/constants";
 import { announce } from "@/helpers/erc5564";
-import { Hex, parseEther, formatEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { Hex, parseEther, formatEther } from "viem";
 import { getPublicClient } from "@/clients/publicClient";
 import { createMetaData } from "@/helpers/createMetaData";
+import { mint, transfer, balanceOf } from "@/helpers/erc20";
 import { parseData, type StealthMetaData } from "@/helpers/parseData";
 import { preConditions, sendEth, sendEthFrom } from "@/helpers/preConditions";
 import { createKeys, createKeyPair, type KeyPair } from "@/helpers/createKeys";
@@ -39,6 +40,7 @@ const main = async () => {
     console.log("Current Block Number:", blockNumber);
 
     await preConditions(walletAccounts[0].walletClient.account!.address, 0.8, publicClient);
+    await mint(walletAccounts[2].walletClient.account!.address, parseEther("1000"));
 
     await registerPair([walletAccounts[0], walletAccounts[1]]);
     const stealthMetaAddress: Hex = await getStealthMetaAddress(walletAccounts[0].walletClient.account!.address);
@@ -51,14 +53,14 @@ const main = async () => {
 
     const metaData = await createMetaData(
         viewTag,
-        constants.ETH_TRANSACTION_SELECTOR,
-        constants.ETH_ADDRESS,
-        parseEther("0.1")
+        constants.TRANSFER_ERC20_SELECTOR,
+        addressBook.MOCK_ERC20_ADDRESS,
+        parseEther("10")
     );
 
     const { stealthPublicKey, stealthAddress } = await computeStealthPublicKeyAndAddress(sharedSecretHash, spendingPublicKey);
     await sendEth(walletAccounts[2].walletClient.account!.address, 0.5, publicClient);
-    await sendEthFrom(walletAccounts[2], stealthAddress, 0.1, publicClient);
+    await transfer(walletAccounts[2], stealthAddress, parseEther("10"));
     await announce(walletAccounts[2], stealthAddress, walletAccounts[walletAccounts.length - 1].keyPair.publicKey, metaData);
 
     const output = await listener.eventSubscription({
@@ -73,7 +75,7 @@ const main = async () => {
     const stealthAccount = privateKeyToAccount(stealthPrivKey);
 
     console.log(":stealthAccount:", stealthAccount.address);
-    const balanceStealthAddress = await publicClient.getBalance(stealthAccount);
+    const balanceStealthAddress = await balanceOf(stealthAccount.address);
     console.log(":balanceStealthAddress:", formatEther(balanceStealthAddress));
 
 };

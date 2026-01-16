@@ -27,6 +27,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "viem": "^2.43.5"
+    "dotenv": "^16.6.1",
+    "viem": "^2.43.5",
+    "vite": "^7.3.1"
   }
 }

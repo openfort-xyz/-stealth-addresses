@@ -16,3 +16,5 @@ documentation/SchemeId1Lifecycle.md:ethereum-private-key-hex:132
 documentation/SchemeId1Lifecycle.md:ethereum-private-key-hex:133
 documentation/SchemeId1Lifecycle.md:ethereum-private-key-hex:160
 documentation/SchemeId1Lifecycle.md:ethereum-private-key-hex:162
+script/deploy/DeployMockERC20.s.sol:ethereum-private-key-hex:9
+src/demo/scripts/setup.ts:ethereum-private-key-hex:25

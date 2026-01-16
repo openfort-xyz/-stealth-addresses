@@ -1,0 +1,22 @@
+{
+  "name": "stealth-demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "setup": "tsx scripts/setup.ts",
+    "dev": "npm run setup && vite",
+    "dev:only": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "@noble/curves": "^1.8.2",
+    "@noble/hashes": "^1.8.0",
+    "viem": "^2.43.5"
+  }
+}
