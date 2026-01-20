@@ -129,7 +129,7 @@ abstract contract Stealth {
      *   announce(1, ephemeralPubKey, metadata)
      */
     function announce(uint256 schemeId, bytes calldata ephemeralPubKey, bytes calldata metadata) external {
-        // Validate ephemeral public key length (compressed: 33, uncompressed: 65)
+        // Validate ephemeral public key length (66)
         if (ephemeralPubKey.length != 66) {
             revert InvalidEphemeralPubKeyLength();
         }
