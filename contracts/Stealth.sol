@@ -36,8 +36,11 @@ abstract contract Stealth {
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Thrown when schemeId is not id=1
+    error InvalidSchemeId();
+
     /// @notice Thrown when ephemeralPubKey has invalid length
-    /// @dev Valid lengths: 33 bytes (compressed) or 65 bytes (uncompressed)
+    /// @dev Valid lengths: 33 bytes (compressed)
     error InvalidEphemeralPubKeyLength();
 
     /// @notice Thrown when metadata is empty (must contain at least viewTag)
@@ -129,8 +132,13 @@ abstract contract Stealth {
      *   announce(1, ephemeralPubKey, metadata)
      */
     function announce(uint256 schemeId, bytes calldata ephemeralPubKey, bytes calldata metadata) external {
-        // Validate ephemeral public key length (66)
-        if (ephemeralPubKey.length != 66) {
+        // Validate ephemeral public key length (33)
+        if (schemeId != 1) {
+            revert InvalidSchemeId();
+        }
+
+        // Validate ephemeral public key length (33)
+        if (ephemeralPubKey.length != 33) {
             revert InvalidEphemeralPubKeyLength();
         }
 
