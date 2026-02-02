@@ -47,17 +47,25 @@ export class Listener {
                 console.log(`[subscribe] ${opts.chain.name} -> ${def.eventName} @ ${address}` + (args ? ` args=${JSON.stringify(args)}` : " (no args)"));
             }
 
-            const pastLogs = await client.getContractEvents({
-                address,
-                abi: def.abi as Abi,
-                eventName: def.eventName as any,
-                ...(args ? { args } : {}),
-                fromBlock,
-            });
-            if (pastLogs.length > 0) {
-                const onLogs = this.onLogsFactory(def, opts.chain.name);
-                onLogs(pastLogs);
-                return (pastLogs[pastLogs.length - 1]?.args ?? {}) as StealthMetaData;
+            // Retry getting past logs a few times (RPC indexing delay)
+            const maxRetries = 5;
+            for (let retry = 0; retry < maxRetries; retry++) {
+                const pastLogs = await client.getContractEvents({
+                    address,
+                    abi: def.abi as Abi,
+                    eventName: def.eventName as any,
+                    ...(args ? { args } : {}),
+                    fromBlock,
+                });
+                if (pastLogs.length > 0) {
+                    const onLogs = this.onLogsFactory(def, opts.chain.name);
+                    onLogs(pastLogs);
+                    const lastLog = pastLogs[pastLogs.length - 1] as unknown as { args: StealthMetaData };
+                    return lastLog?.args ?? {} as StealthMetaData;
+                }
+                if (retry < maxRetries - 1) {
+                    await sleep(2000); // Wait 2 seconds before retry
+                }
             }
 
             const onLogs = this.onLogsFactory(def, opts.chain.name);
@@ -72,7 +80,8 @@ export class Listener {
                         resolved = true;
                         if (timeoutId) clearTimeout(timeoutId);
                         stopAll();
-                        resolveOnce((logs[0]?.args ?? {}) as StealthMetaData);
+                        const firstLog = logs[0] as unknown as { args: StealthMetaData };
+                        resolveOnce(firstLog?.args ?? {} as StealthMetaData);
                     }
                 },
                 onError: async () => { await sleep(cfg.retryDelayMs); },
