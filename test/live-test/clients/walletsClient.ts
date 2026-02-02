@@ -6,11 +6,11 @@ import { createOpenfortAccount } from "../openfort7702";
 import { getBundlerClient } from "./../clients/bundlerClient";
 import { type SmartAccount, type BundlerClient } from "viem/account-abstraction";
 import { KeyPair, getPublicKeyFromPrivateKey } from "../utils/createKeys";
-import { Hex, http, publicActions, walletActions, createClient } from "viem";
+import { Hex, http, publicActions, walletActions, createClient, type PublicActions, type WalletActions } from "viem";
 
 export interface Account {
     keyPair: KeyPair;
-    client: Client;
+    client: Client & PublicActions & WalletActions;
     bundler: BundlerClient<SmartAccount>;
     smartAccount: SmartAccount;
 }
