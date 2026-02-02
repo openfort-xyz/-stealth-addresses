@@ -1,5 +1,6 @@
 import { abis } from "../../src/data/abis"
 import { _announce } from "./utils/announce";
+import { optimismSepolia } from "viem/chains";
 import { accounts } from "./clients/walletsClient";
 import { Listener } from "../../src/utils/listener";
 import { privateKeyToAccount } from "viem/accounts";
@@ -10,13 +11,12 @@ import { PaymasterData } from "./data/paymasterConstants";
 import { _attachAccounts } from "./utils/authorizeAccount";
 import { createMetaData } from "../../src/helpers/createMetaData";
 import { _registerMetaAddress } from "./utils/registerMetaAddress";
+import { decodeStealthMetaAddress } from "../../src/helpers/erc6538";
 import { _announceAndSendERC20 } from "./utils/announceAndSendERC20";
 import { Hex, concat, Address, parseEther, formatEther } from "viem";
 import { createKeyPair, KeyPair, createKeys } from "./utils/createKeys";
 import { computeStealthPublicKeyAndAddress } from "../../src/helpers/computeStealthPublicKey";
 import { computeSharedSecret, hashSharedSecret, getViewTag } from "./utils/computeSharedSecret";
-import { registerPair, getStealthMetaAddress, decodeStealthMetaAddress } from "../../src/helpers/erc6538";
-import { optimismSepolia } from "viem/chains";
 // ------------------------------------------------------------------------------------
 //
 //                         Create Spending and Viewing Keys
