@@ -19,3 +19,7 @@ documentation/SchemeId1Lifecycle.md:ethereum-private-key-hex:162
 script/deploy/DeployMockERC20.s.sol:ethereum-private-key-hex:9
 src/demo/scripts/setup.ts:ethereum-private-key-hex:25
 test/live-test/openfort7702/index.ts:ethereum-private-key-hex:32
+documentation/back-end/components/Creation-Key-Pairs.md:ethereum-private-key-hex:640
+documentation/back-end/components/Creation-Key-Pairs.md:ethereum-private-key-hex:637
+documentation/back-end/components/Creation-Key-Pairs.md:ethereum-private-key-hex:340
+documentation/back-end/Research.md:ethereum-private-key-hex:28
