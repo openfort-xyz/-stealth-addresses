@@ -1,4 +1,4 @@
-# Component 2: Storing Spending and Viewing Key Pairs
+# Storing Spending and Viewing Key Pairs
 
 ## Deep Research — ERC-5564 SchemeId=1 (SECP256k1) Stealth Address Systems
 

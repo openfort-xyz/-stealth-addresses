@@ -1,4 +1,4 @@
-# Component 1: Creation of Spending and Viewing Key Pairs
+# Creation of Spending and Viewing Key Pairs
 
 ## Deep Research — Production Implementations for ERC-5564 SchemeId = 1 (SECP256k1)
 

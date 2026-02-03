@@ -1,4 +1,4 @@
-# Component 5: Event Listener / Announcement Indexer
+# Event Listener / Announcement Indexer
 
 ## Deep Research — Production Solutions & Implementation Patterns
 

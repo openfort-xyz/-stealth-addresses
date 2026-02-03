@@ -1,4 +1,4 @@
-# Component 3: Storing the Stealth Meta-Address for Fast Access
+# Storing the Stealth Meta-Address for Fast Access
 
 ## Deep Research — ERC-5564 SchemeId=1 (SECP256k1) Stealth Address Systems
 
