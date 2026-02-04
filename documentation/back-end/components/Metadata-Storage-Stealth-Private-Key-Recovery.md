@@ -6,13 +6,11 @@
 
 ## 1. Executive Summary
 
-The stealth address protocol (ERC-5564) introduces a fundamental asymmetry between sending and spending: a sender can create a stealth address for a recipient using only the recipient's publicly registered stealth meta-address, but the recipient cannot spend funds at that stealth address without reconstructing the corresponding stealth private key. This reconstruction requires the sender's ephemeral public key — a piece of metadata that exists only in the on-chain `Announcement` event emitted at send time. If the recipient loses access to this metadata, funds at the stealth address become permanently unrecoverable.
+This document focuses on the **metadata storage infrastructure** required to support stealth private key recovery in ERC-5564 systems. While the cryptographic derivation formulas and wallet injection mechanisms are covered in [Stealth Private Key Recovery & Wallet Injection](./Stealth-Private-Key-Recovery-Wallet-Injection.md), this document addresses the complementary problem: **how and where recovery-critical metadata is stored**, cached, and made available under all failure scenarios.
 
-This creates a critical infrastructure requirement: **metadata storage systems that guarantee the availability of ephemeral public keys and related recovery data under all failure scenarios**, including loss of device, loss of service provider, or complete wallet reset.
+The stealth address protocol introduces a fundamental asymmetry: a sender can create a stealth address using only the recipient's public meta-address, but the recipient cannot spend funds without reconstructing the stealth private key — which requires the sender's ephemeral public key (`P_ephemeral`). This metadata exists in on-chain `Announcement` events, but efficiently accessing it requires storage infrastructure: local caches, restore height bookmarks, encrypted local databases, server-side schemas, and social recovery mechanisms.
 
-Production systems have diverged into two fundamentally different approaches to solving this problem. **Fluidkey** eliminates the need to store per-transaction ephemeral keys entirely by using BIP-32 hierarchical deterministic derivation — all stealth addresses can be replayed from the user's wallet private key and a PIN, with no external metadata required. **Umbra** takes the opposite approach, relying entirely on on-chain `Announcement` events as the canonical metadata store — the recipient scans the blockchain to discover which announcements belong to them, extracting ephemeral public keys from each matching event. Both approaches guarantee recovery without trusting a third-party service, but with vastly different performance and architectural tradeoffs.
-
-The choice between these strategies has cascading implications for scanning performance, server infrastructure, privacy exposure, multi-chain support, and the viability of social recovery schemes. This document examines each production implementation in detail, including their recovery flows, database schemas, performance optimizations, security audits, and the open problems that remain unsolved.
+This document examines: the core recovery problem and failure scenarios (Section 2), how Fluidkey and Umbra approach metadata storage differently (Sections 3–4), restore height optimization (Section 5), encrypted local storage patterns (Section 6), server-side database schemas (Section 7), social recovery compatibility (Section 8), minimum backup requirements (Section 10), and privacy considerations for metadata storage (Section 11).
 
 ---
 
@@ -20,19 +18,11 @@ The choice between these strategies has cascading implications for scanning perf
 
 ### 2.1. Why Metadata Is Required
 
-To spend funds at a stealth address, the recipient must derive the stealth private key:
+To spend funds at a stealth address, the recipient must derive the stealth private key using ECDH with the sender's ephemeral public key.
 
-```
-p_stealth = p_spend + hash(s)
+> **See:** [Stealth Private Key Recovery & Wallet Injection](./Stealth-Private-Key-Recovery-Wallet-Injection.md), Section 2.1 — for the canonical derivation formula (`p_stealth = p_spend + hash(s) mod n`).
 
-where:
-  s = p_view × P_ephemeral    (shared secret via ECDH)
-  P_ephemeral                  (sender's ephemeral public key, from Announcement event)
-  p_view                       (recipient's viewing private key)
-  p_spend                      (recipient's spending private key)
-```
-
-The recipient always possesses `p_spend` and `p_view` (these are their root keys, backed up as a seed phrase or derived from a wallet signature). The missing piece is **`P_ephemeral`** — the sender's one-time ephemeral public key that was used to generate the stealth address. Without it, the shared secret `s` cannot be computed, and the stealth private key cannot be derived.
+The recipient always possesses `p_spend` and `p_view` (their root keys, backed up as a seed phrase or derived from a wallet signature). The missing piece is **`P_ephemeral`** — the sender's one-time ephemeral public key that was used to generate the stealth address. Without it, the shared secret `s` cannot be computed, and the stealth private key cannot be derived.
 
 ### 2.2. Where P_ephemeral Lives
 
@@ -90,373 +80,29 @@ Recovery metadata must survive the following scenarios:
 
 ## 3. Production Approach #1: BIP-32 Deterministic Derivation (Fluidkey)
 
-### 3.1. Architecture Overview
+Fluidkey eliminates the need to store per-transaction ephemeral keys by using BIP-32 hierarchical deterministic derivation. All stealth addresses can be replayed from the user's wallet private key and PIN, with no external metadata required. The Fluidkey server holds a derived subtree of the viewing key (at `m/5564'/N'`), which it uses to generate new stealth addresses on behalf of the user. The spending key never leaves the client.
 
-Fluidkey's fundamental insight is that if ephemeral keys are derived **deterministically** from the recipient's own key material, there is nothing external to store. The recipient can always replay the derivation process and reconstruct every stealth address ever generated for them — no announcement scanning required.
+> **See:** [Stealth Private Key Recovery & Wallet Injection](./Stealth-Private-Key-Recovery-Wallet-Injection.md), Section 5 — for the Fluidkey BIP-32 recovery architecture, wallet injection flow, smart account integration, counterfactual Safe address prediction, and SARA recovery tool.
+>
+> **See:** [Creation of Key Pairs](./Creation-Key-Pairs.md), Section 4.2 — for the BIP-32 derivation path structure (`m/5564'/N'/c0'/c1'/0'/p'/n'`), ENSIP-11 coinType encoding, and multi-chain derivation.
+>
+> **See:** [Storing Key Pairs](./Storing-Key-Pairs.md), Section 4.1 — for the canonical `extractViewingPrivateKeyNode()` implementation and server-side viewing node delegation.
 
-This is achieved by using BIP-32 hierarchical deterministic key derivation to generate ephemeral private keys from a node of the user's viewing key. The Fluidkey server holds a derived subtree of the viewing key (not the root), which it uses to generate new stealth addresses on behalf of the user. The spending key never leaves the client.
-
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                    Fluidkey Key Hierarchy                                │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  Wallet Private Key + PIN                                                │
-│        │                                                                 │
-│        ▼  sign(hash(wallet_address + PIN))                               │
-│  ┌─────────────┐                                                         │
-│  │  Signature  │                                                         │
-│  └──────┬──────┘                                                         │
-│         │  split + hash                                                  │
-│         ▼                                                                │
-│  ┌──────────────────┐    ┌──────────────────┐                            │
-│  │ Spending Key     │    │ Viewing Key      │                            │
-│  │ (p_spend)        │    │ (p_view)         │                            │
-│  │ CLIENT-ONLY      │    │ BIP-32 root      │                            │
-│  └──────────────────┘    └────────┬─────────┘                            │
-│                                   │                                      │
-│                                   ▼  extractViewingPrivateKeyNode()      │
-│                          ┌────────────────────┐                          │
-│                          │ BIP-32 Node        │                          │
-│                          │ m/5564'/N'         │                          │
-│                          │ SHARED WITH SERVER │                          │
-│                          └────────┬───────────┘                          │
-│                                   │                                      │
-│                                   ▼  generateEphemeralPrivateKey()       │
-│                ┌──────────────────────────────────────┐                  │
-│                │ Derivation Path (per stealth address)│                  │
-│                │ m/5564'/N'/c0'/c1'/0'/p'/n'          │                  │
-│                └──────────────────────────────────────┘                  │
-│                                   │                                      │
-│              n = 0        n = 1        n = 2       ...                   │
-│                │            │            │                               │
-│                ▼            ▼            ▼                               │
-│          Stealth #0   Stealth #1   Stealth #2    (infinite)              │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
-### 3.2. Key Generation from Wallet Signature
-
-When a user signs into Fluidkey, they sign a deterministic message with their Ethereum wallet. The signature is split and hashed to produce the spending and viewing keys:
-
-```typescript
-import { generateKeysFromSignature } from '@fluidkey/stealth-account-kit';
-
-// User signs a message: hash(walletAddress + PIN)
-// The resulting signature deterministically produces both keys:
-const { spendingPrivateKey, viewingPrivateKey } = generateKeysFromSignature(signature);
-
-// The private key pair never leaves the client and is NOT stored locally.
-// Every time the user re-opens the app, they must sign again to derive keys.
-```
-
-This design has a critical property: **the keys are ephemeral in memory**. They are never persisted to disk, localStorage, or any database. Each session requires a fresh signature from the wallet. This means:
-
-- No key material exists on-device between sessions
-- Device theft yields zero key exposure (assuming the wallet itself is locked)
-- Recovery requires only the original wallet + PIN — no backup file, no seed phrase for the stealth layer
-
-### 3.3. BIP-32 Viewing Key Node Sharing
-
-To allow Fluidkey's server to generate stealth addresses on the user's behalf (e.g., when someone sends to `username.fkey.eth`), the user shares a BIP-32 derived **node** of their viewing key:
-
-```typescript
-import { extractViewingPrivateKeyNode } from '@fluidkey/stealth-account-kit';
-
-const viewingKeyNode = extractViewingPrivateKeyNode(viewingPrivateKey);
-// Returns BIP-32 node at path m/5564'/0'
-// This node is shared with Fluidkey server
-
-// Fluidkey currently uses N = 0 for all users.
-// Future: N may reference time periods or third-party view access scopes.
-```
-
-The shared node at `m/5564'/N'` allows the server to derive all child ephemeral keys at deeper paths, but **cannot** derive the root viewing key or the spending key. The server can generate stealth addresses and detect incoming payments, but cannot spend funds.
-
-### 3.4. Derivation Path Specification
-
-Each stealth address corresponds to a unique leaf in the BIP-32 tree:
-
-```
-Full path: m/5564'/N'/c0'/c1'/0'/p'/n'
-
-Components:
-  5564'  → ERC-5564 reference (hardened)
-  N'     → Node identifier (currently 0 for all users)
-  c0'    → coinType high bits (from ENSIP-11 chain identifier)
-  c1'    → coinType low bits
-  0'     → Reserved
-  p'     → Counter high bits
-  n'     → Counter low bits (incremented per stealth address)
-
-BIP-32 constraint: no single number may exceed 0x80000000 (2^31).
-This is why coinType and counter are split into two components (c0'/c1' and p'/n').
-```
-
-For Fluidkey's current production configuration:
-
-```
-chainId = 0         → Cross-chain addresses (valid on all EVM chains)
-coinType = 8'/0'    → ENSIP-11 encoding of chainId 0
-path = m/5564'/0'/8'/0'/0'/p'/n'
-
-Example:
-  Stealth address #0: m/5564'/0'/8'/0'/0'/0'/0'
-  Stealth address #1: m/5564'/0'/8'/0'/0'/0'/1'
-  Stealth address #42: m/5564'/0'/8'/0'/0'/0'/42'
-```
-
-### 3.5. Deterministic Recovery Flow
-
-Recovery requires only two inputs: the user's wallet private key and their PIN.
-
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                  Fluidkey Recovery Flow (No Server Required)             │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  Input: wallet_private_key + PIN                                         │
-│                                                                          │
-│  Step 1: Reconstruct signature                                           │
-│     sig = wallet.signMessage(hash(wallet_address + PIN))                 │
-│                                                                          │
-│  Step 2: Derive key pair                                                 │
-│     { spendingKey, viewingKey } = generateKeysFromSignature(sig)         │
-│                                                                          │
-│  Step 3: Extract BIP-32 node                                             │
-│     node = extractViewingPrivateKeyNode(viewingKey)  // m/5564'/0'       │
-│                                                                          │
-│  Step 4: Iterate derivation counter                                      │
-│     for n = 0, 1, 2, ...:                                                │
-│       ephemeralKey = generateEphemeralPrivateKey(node, n)                │
-│       stealthAddresses = generateStealthAddresses(ephemeralKey, ...)     │
-│       safeAddress = predictStealthSafeAddressWithClient(...)             │
-│       balance = getBalance(safeAddress)                                  │
-│       if balance > 0: record as active stealth account                   │
-│       if GAP_LIMIT consecutive empty addresses: STOP                     │
-│                                                                          │
-│  Output: List of all stealth accounts with balances                      │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
-### 3.6. Counterfactual Safe Address Prediction
-
-Fluidkey uses 1/1 Safe smart accounts as stealth accounts. The Safe address is predicted via CREATE2 before deployment — the contract is only actually deployed when the user first withdraws:
-
-```typescript
-import { predictStealthSafeAddressWithClient } from '@fluidkey/stealth-account-kit';
-
-// Recovery parameters (fixed for all Fluidkey accounts):
-const recoveryParams = {
-  chainId: 0,               // Cross-chain
-  safeVersion: '1.3.0',     // Safe contract version
-  useDefaultAddress: true,   // Use default Safe singleton
-  threshold: 1,              // 1-of-1 multisig (single signer)
-};
-
-// For each derived stealth EOA, predict the corresponding Safe address:
-const safeAddress = await predictStealthSafeAddressWithClient({
-  stealthAddress: stealthEOA,   // The derived stealth signer
-  ...recoveryParams,
-});
-
-// The Safe might not be deployed yet (counterfactual).
-// Check balance at the predicted address:
-const balance = await client.getBalance({ address: safeAddress });
-```
-
-### 3.7. SARA: Stealth Account Recovery Assistant
-
-After the Dedaub audit identified that independent recovery required substantial technical expertise, Fluidkey developed SARA — a hosted web interface for server-independent recovery. SARA was originally built by a community contributor (shahnami) and later forked and maintained by Fluidkey.
-
-```
-Production Recovery Tools:
-├── SARA (recovery.fluidkey.com)     — Hosted web interface
-├── fluidkey-stealth-account-kit     — Open-source TypeScript library
-├── Example recovery scripts         — In the kit's /example folder
-└── Community-built recovery tools   — Multiple independent implementations
-```
-
-The SARA interface allows non-technical users to:
-
-1. Connect their wallet
-2. Enter their PIN
-3. Automatically scan all derivation paths
-4. View discovered stealth accounts and balances
-5. Export private keys for each stealth account
-
-### 3.8. Dedaub Audit Findings (May 2024)
-
-The Dedaub security audit of the Fluidkey Stealth Account Kit identified two medium-severity findings directly related to recovery:
-
-**M1 — Incomplete Recovery Code (Medium):**
-The audit noted that no code path in the kit at the time fully performed the stealth private key recovery computation end-to-end. The individual functions existed (`generateKeysFromSignature`, `extractViewingPrivateKeyNode`, `generateEphemeralPrivateKey`, `generateStealthAddresses`, `generateStealthPrivateKey`), but there was no integrated recovery workflow.
-
-**M2 — Recovery Expertise Requirement (Medium):**
-The audit stated that recovering keys without Fluidkey servers would require unrealistic technical expertise from average users. This was addressed post-audit with the development of SARA and the addition of example recovery scripts to the kit repository.
-
-**Post-Audit Resolution:**
-Both findings were addressed at commit `192a2260c0a254d28951519f1bbef1f6f4e44312`, verified by Dedaub as correctly implemented. The SARA tool and open-source recovery examples now provide server-independent recovery paths for non-technical users.
-
-### 3.9. Initdata for Extended Functionality
-
-When Fluidkey's auto-earn feature is enabled, additional initialization data (`initdata`) is passed to configure the Fluidkey Earn Module (a Safe module for automatic ERC-4626 vault deposits). This initdata is versioned and documented to ensure recovery tools can reconstruct the full Safe configuration, including modules.
-
-```
-Initdata versions are logged at:
-docs.fluidkey.com/technical-documentation/stealth-account-initdata
-
-Purpose: Ensure recovery tools can predict the correct Safe address
-even when modules are installed that alter the initialization transaction.
-```
+**Key metadata-storage implication:** Because Fluidkey's derivation is deterministic, there is **no per-transaction metadata to store**. Recovery requires only the wallet key + PIN. This eliminates the announcement scanning problem entirely for the Fluidkey model.
 
 ---
 
 ## 4. Production Approach #2: On-Chain Announcement Scanning (Umbra / ERC-5564 Standard)
 
-### 4.1. Architecture Overview
+Umbra follows the ERC-5564 specification directly: all recovery metadata lives on-chain in `Announcement` events. The recipient scans these events, performs ECDH with their viewing key against each ephemeral public key, and identifies which announcements are addressed to them. This approach has maximum decentralization — no server is involved in the recovery process.
 
-Umbra follows the ERC-5564 specification directly: all recovery metadata lives on-chain in `Announcement` events. The recipient scans these events, performs ECDH with their viewing key against each ephemeral public key, and identifies which announcements are addressed to them.
+> **See:** [Event Listener](./Event-Listener.md), Sections 3–4 — for the ViewTag scanning algorithm (99.6% filter efficiency), Umbra subgraph architecture, and client-side scanning flow.
+>
+> **See:** [Stealth Private Key Recovery & Wallet Injection](./Stealth-Private-Key-Recovery-Wallet-Injection.md), Section 4 — for the Umbra key derivation implementation, wallet injection, and gas funding architecture.
+>
+> **See:** [Event Listener](./Event-Listener.md), Section 7 — for the ScopeLift SDK `createStealthClient`, `getAnnouncements`, `getAnnouncementsForUser`, and `computeStealthKey` code examples.
 
-This approach has maximum decentralization — no server is involved in the recovery process, and no deterministic derivation relationship exists between consecutive stealth addresses. But it comes with a computational cost: the recipient must scan **every** announcement event since the contract was deployed (or since their restore height) to find their payments.
-
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                    Umbra Recovery Architecture                           │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│                     On-Chain (Immutable, Always Available)               │
-│  ┌────────────────────────────────────────────────────────────────────┐  │
-│  │  ERC5564Announcer Contract                                         │  │
-│  │  0x55649E01B5Df198D18D95b5cc5051630cfD45564                        │  │
-│  │                                                                    │  │
-│  │  Announcement Event Log:                                           │  │
-│  │  ┌─────────┬─────────────────┬──────────────┬──────────────────┐   │  │
-│  │  │ Block # │ stealthAddress  │ ephemeralPub │ metadata         │   │  │
-│  │  ├─────────┼─────────────────┼──────────────┼──────────────────┤   │  │
-│  │  │ 18000001│ 0xabc...        │ 0x02def...   │ 0x4f...          │   │  │
-│  │  │ 18000042│ 0x123...        │ 0x03789...   │ 0xa1...          │   │  │
-│  │  │ 18000099│ 0x456...        │ 0x02bcd...   │ 0x7e...          │   │  │
-│  │  │  ...    │  ...            │  ...         │  ...             │   │  │
-│  │  └─────────┴─────────────────┴──────────────┴──────────────────┘   │  │
-│  └────────────────────────────────────────────────────────────────────┘  │
-│                              │                                           │
-│                              │  eth_getLogs / Subgraph query             │
-│                              ▼                                           │
-│                    ┌───────────────────┐                                 │
-│                    │  Client Scanner   │                                 │
-│                    │                   │                                 │
-│                    │  For each event:  │                                 │
-│                    │  1. View tag check│  ← 99.6% filtered out           │
-│                    │  2. Full ECDH     │  ← 0.4% require this            │
-│                    │  3. Address match │                                 │
-│                    │  4. Store result  │                                 │
-│                    └───────────────────┘                                 │
-│                              │                                           │
-│                              ▼                                           │
-│                    ┌───────────────────┐                                 │
-│                    │  Local Cache      │                                 │
-│                    │  (IndexedDB /     │                                 │
-│                    │   localStorage)   │                                 │
-│                    └───────────────────┘                                 │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
-### 4.2. Announcement Scanning with View Tag Optimization
-
-The ERC-5564 specification includes a 1-byte **view tag** in the metadata field to dramatically reduce scanning costs:
-
-```
-For each Announcement event:
-
-Step 1: FAST FILTER (1 × ecMUL + 1 × HASH)
-  s = p_view × P_ephemeral           // Compute shared secret
-  v_computed = hash(s)[0]             // First byte of hashed secret
-  v_announced = metadata[0]           // First byte of metadata field
-
-  if v_computed ≠ v_announced → SKIP  // 255/256 = 99.6% rejection rate
-
-Step 2: FULL CHECK (only reached 0.4% of the time)
-  s_h = hash(s)                       // Full hash of shared secret
-  P_stealth = P_spend + (s_h × G)     // Derive expected stealth public key
-  a_stealth = pubkeyToAddress(P_stealth)
-
-  if a_stealth = announced_stealthAddress → MATCH FOUND
-    → Store: { ephemeralPubKey, stealthAddress, blockNumber, txHash }
-
-Step 3: KEY DERIVATION (on match)
-  p_stealth = p_spend + s_h           // Stealth private key (mod n)
-  → Can now spend funds at stealthAddress
-```
-
-### 4.3. ScopeLift SDK Recovery Implementation
-
-The ScopeLift stealth-address-sdk provides the reference implementation for announcement scanning and key recovery:
-
-```typescript
-import {
-  createStealthClient,
-  computeStealthKey,
-  ERC5564_CONTRACT_ADDRESS,
-  VALID_SCHEME_ID,
-} from '@scopelift/stealth-address-sdk';
-
-// Initialize stealth client for a specific chain
-const stealthClient = createStealthClient({
-  chainId: 11155111,      // e.g., Sepolia
-  rpcUrl: process.env.RPC_URL,
-});
-
-// Step 1: Fetch all announcements (with optional fromBlock for restore height)
-const announcements = await stealthClient.getAnnouncements({
-  ERC5564Address: ERC5564_CONTRACT_ADDRESS,
-  args: {
-    schemeId: BigInt(VALID_SCHEME_ID.SCHEME_ID_1),
-  },
-  fromBlock: BigInt(restoreHeight),  // Critical: set this to avoid full scan
-});
-
-// Step 2: Filter announcements for this user
-const myAnnouncements = await stealthClient.getAnnouncementsForUser({
-  announcements,
-  spendingPublicKey: userSpendingPubKey,
-  viewingPrivateKey: userViewingPrivKey,
-});
-
-// Step 3: For each matched announcement, derive stealth private key
-for (const announcement of myAnnouncements) {
-  const stealthPrivateKey = computeStealthKey({
-    viewingPrivateKey: userViewingPrivKey,
-    spendingPrivateKey: userSpendingPrivKey,
-    ephemeralPublicKey: announcement.ephemeralPubKey,
-    schemeId: VALID_SCHEME_ID.SCHEME_ID_1,
-  });
-
-  // stealthPrivateKey now controls funds at announcement.stealthAddress
-}
-```
-
-### 4.4. Umbra Key Derivation from Wallet Signature
-
-Like Fluidkey, Umbra derives spending and viewing keys from a signed message — avoiding the need for a separate seed phrase:
-
-```
-Umbra Key Derivation:
-1. User signs a deterministic message with their wallet
-2. Signature is used to derive:
-   - Spending private key → spending public key
-   - Viewing private key → viewing public key
-3. Public keys are registered in the on-chain Stealth Key Registry
-4. Combined as stealth meta-address: st:eth:0x<P_spend><P_view>
-
-Recovery input: wallet private key (to reproduce the signature)
-Recovery process: re-sign → re-derive → re-scan announcements
-```
-
-### 4.5. Umbra Caching Strategy
+### 4.1. Umbra Caching Strategy
 
 Umbra's client-side caching reduces re-scanning time for returning users. The Umbra app reports approximately 10–15 seconds for a weekly scan window, thanks to incremental checkpoint-based caching.
 
@@ -776,32 +422,7 @@ Strategy 4: Keystore Contracts (Vitalik's "Three Transitions" vision)
 
 ## 9. Comparison Matrix: Fluidkey vs. Umbra Recovery
 
-```
-┌────────────────────────────┬──────────────────────┬──────────────────────┐
-│ Property                   │ Fluidkey             │ Umbra / ERC-5564     │
-│                            │ (Deterministic)      │ (Scan-Based)         │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ Recovery inputs            │ Wallet key + PIN     │ Wallet key           │
-│ Server required            │ No                   │ No                   │
-│ Blockchain scan required   │ Balance check only   │ Full event scan      │
-│ Scanning cost              │ Low (balance queries)│ High (ECDH per event)│
-│ View tag optimization      │ Not needed           │ Critical (99.6%)     │
-│ Recovery speed             │ Seconds-minutes      │ Minutes-hours        │
-│ Restore height needed      │ No                   │ Yes (important)      │
-│ Per-tx metadata storage    │ None                 │ On-chain events      │
-│ Gap limit                  │ Yes (must define)    │ No                   │
-│ Max stealth addresses      │ ~2^31 per path       │ Unlimited            │
-│ Social recovery compat.    │ Good (root key only) │ Challenging (N txs)  │
-│ Privacy from server        │ Server sees view key │ Maximum (no server)  │
-│ Audit status               │ Dedaub (May 2024)    │ Multiple audits      │
-│ Open-source recovery tool  │ SARA + kit           │ SDK + app.umbra.cash │
-│ Smart account integration  │ Native (Safe 1/1)    │ EOA (requires wrap)  │
-│ On-chain dependency        │ Balance only         │ Announcement events  │
-│ ENS integration            │ username.fkey.eth    │ ENS key registration │
-│ Multi-chain recovery       │ Single derivation    │ Per-chain scan       │
-│ Counter-based iteration    │ Yes (BIP-32 index)   │ No                   │
-└────────────────────────────┴──────────────────────┴──────────────────────┘
-```
+> **See:** [Stealth Private Key Recovery & Wallet Injection](./Stealth-Private-Key-Recovery-Wallet-Injection.md), Addendum — for the comprehensive comparison matrix covering recovery inputs, scanning costs, smart account integration, multi-chain recovery, and all production implementation differences.
 
 ---
 

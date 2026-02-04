@@ -122,21 +122,9 @@ extractViewingPrivateKeyNode(
 
 #### 4.2 Stealth Address Derivation
 
-Each new stealth address is derived by incrementing a counter on the BIP-32 viewing key node. The full derivation path is:
+Each new stealth address is derived by incrementing a counter on the BIP-32 viewing key node. Each leaf produces an **ephemeral private key**, from which a **stealth EOA** is derived. This stealth EOA becomes the sole owner/signer of a 1/1 Safe smart account.
 
-```
-m/5564'/N'/c0'/c1'/0'/p'/n'
-```
-
-Where:
-- `5564` = ERC-5564 reference
-- `N` = shared node index (currently `0`)
-- `c0'/c1'` = coinType following ENSIP-11 (currently `8'/0'` for chainId `0`, meaning cross-chain valid)
-- `p'/n'` = page/index for the specific stealth address
-
-This means the derivation path looks like: `m/5564'/0'/8'/0'/0'/p'/n'`
-
-Each leaf produces an **ephemeral private key**, from which a **stealth EOA** is derived. This stealth EOA becomes the sole owner/signer of a 1/1 Safe smart account.
+> **See:** [Creation of Key Pairs](./Creation-Key-Pairs.md), Section 4.2 — "BIP-32 Hierarchical Derivation" for the full derivation path structure (`m/5564'/N'/c0'/c1'/0'/p'/n'`), component breakdown, ENSIP-11 coinType encoding, and multi-chain derivation details.
 
 **SDK Functions:**
 ```typescript
@@ -235,21 +223,9 @@ Umbra's wallet management is simpler at the wallet level but pushes more complex
 
 #### 5.1 Scanning and Discovery
 
-The receiver's wallet scans all `Announcement` events from the ERC5564Announcer contract:
+The receiver's wallet scans all `Announcement` events from the ERC5564Announcer contract using the ViewTag optimization, which eliminates ~99.6% of announcements before performing full ECDH derivation.
 
-```
-For each Announcement event:
-  1. Extract ephemeral public key (P_ephemeral)
-  2. Extract view tag from metadata[0]
-  3. Compute shared secret: s = p_view × P_ephemeral
-  4. Hash: s_h = hash(s)
-  5. Compare view tag: if s_h[0] ≠ announced_view_tag → SKIP
-  6. Derive stealth pubkey: P_stealth = P_spend + (s_h × G)
-  7. Compute address: addr = pubkeyToAddress(P_stealth)
-  8. If addr matches announced stealthAddress → THIS IS OURS
-```
-
-View tag filtering eliminates approximately 99.6% of announcements at step 5, reducing full ECDH checks to roughly 1-in-256 events.
+> **See:** [Event Listener](./Event-Listener.md), Section 3 — "The ViewTag Optimization" for the full scanning algorithm, performance benchmarks, and implementation details.
 
 #### 5.2 Account Data Model
 
@@ -316,78 +292,9 @@ Umbra's UI is a flat list of received payments:
 
 The ScopeLift stealth-address-sdk provides the low-level primitives that any wallet can use to implement stealth address management. It does NOT implement wallet management itself — it provides the cryptographic and contract-interaction building blocks.
 
-### 6.1 Stealth Client
+### 6.1 SDK Overview and Code Examples
 
-The SDK's `createStealthClient` is the primary entry point:
-
-```typescript
-import {
-  createStealthClient,
-  ERC5564_CONTRACT_ADDRESS,
-  VALID_SCHEME_ID,
-} from "@scopelift/stealth-address-sdk";
-
-const stealthClient = createStealthClient({
-  chainId: 1,          // Target chain
-  rpcUrl: rpcUrl,      // RPC endpoint
-});
-```
-
-### 6.2 Key Actions for Wallet Management
-
-**Announcement Retrieval:**
-```typescript
-// Fetch all announcements from a block range
-const announcements = await stealthClient.getAnnouncements({
-  ERC5564Address: ERC5564_CONTRACT_ADDRESS,
-  args: {
-    schemeId: BigInt(VALID_SCHEME_ID.SCHEME_ID_1),
-    caller: callerAddress,
-    // Optional: filter from a specific block
-  },
-  fromBlock,
-  toBlock,
-});
-```
-
-**User-Specific Filtering:**
-```typescript
-// Filter announcements for a specific user
-const userAnnouncements = await stealthClient.getAnnouncementsForUser({
-  announcements,
-  spendingPublicKey: userSpendingPubKey,
-  viewingPrivateKey: userViewingPrivKey,
-});
-```
-
-**Stealth Key Derivation:**
-```typescript
-import { computeStealthKey, VALID_SCHEME_ID } from "@scopelift/stealth-address-sdk";
-
-const stealthPrivateKey = computeStealthKey({
-  schemeId: VALID_SCHEME_ID.SCHEME_ID_1,
-  ephemeralPublicKey: announcement.ephemeralPubKey,
-  viewingPrivateKey: userViewingKey,
-  spendingPrivateKey: userSpendingKey,
-});
-```
-
-**Real-Time Monitoring:**
-```typescript
-// Watch for new announcements targeting a specific user
-await stealthClient.watchAnnouncementsForUser({
-  ERC5564Address,
-  args: { schemeId, caller },
-  spendingPublicKey,
-  viewingPrivateKey,
-  handleLogsForUser: (logs) => {
-    // Process new incoming stealth payments
-    for (const log of logs) {
-      addStealthAccountToWallet(log);
-    }
-  },
-});
-```
+> **See:** [Event Listener](./Event-Listener.md), Section 7 — "Reference Implementation: ScopeLift Stealth Address SDK" for the full `createStealthClient` setup, announcement retrieval (`getAnnouncements`), user-specific filtering (`getAnnouncementsForUser`), stealth key derivation (`computeStealthKey`), and real-time monitoring (`watchAnnouncementsForUser`) code examples.
 
 ### 6.3 What the SDK Does NOT Provide
 
@@ -662,86 +569,11 @@ A user with 50 stealth addresses needs balance checks for each address, for each
 
 Multicall3 (`0xcA11bde05977b3631167028862bE2a173976CA11`) is deployed on 100+ chains at the same address and can aggregate multiple `balanceOf` calls into a single RPC request.
 
-```typescript
-import { createPublicClient, http, parseAbi } from 'viem';
-
-const erc20Abi = parseAbi([
-  'function balanceOf(address) view returns (uint256)',
-]);
-
-async function batchQueryBalances(
-  client: PublicClient,
-  stealthAddresses: Address[],
-  tokenAddresses: Address[]
-): Promise<Map<Address, Map<Address, bigint>>> {
-  // Build multicall contracts array
-  const contracts = stealthAddresses.flatMap(stealth =>
-    tokenAddresses.map(token => ({
-      address: token,
-      abi: erc20Abi,
-      functionName: 'balanceOf',
-      args: [stealth],
-    }))
-  );
-
-  // Viem's multicall uses Multicall3 natively
-  const results = await client.multicall({ contracts });
-
-  // Parse results into address → token → balance map
-  const balances = new Map();
-  let idx = 0;
-  for (const stealth of stealthAddresses) {
-    const tokenBalances = new Map();
-    for (const token of tokenAddresses) {
-      const result = results[idx++];
-      if (result.status === 'success') {
-        tokenBalances.set(token, result.result as bigint);
-      }
-    }
-    balances.set(stealth, tokenBalances);
-  }
-  return balances;
-}
-```
-
-**Batch Size Limits:**
-- Most RPC providers handle 50-100 calls per multicall comfortably
-- For larger sets, chunk into batches of 50 and execute in parallel
-- Viem's native multicall support handles chunking automatically
+> **See:** [Balance Aggregation](./Balance-Aggregation.md), Sections 3–4 — for the full Multicall3 implementation including ERC-20 batch queries via Viem multicall, native ETH via `getEthBalance`, batch size limits (50–100 calls per batch), chunking strategies, and consistency guarantees.
 
 ### 9.3 Strategy 2: Native ETH via Multicall3 getEthBalance
 
-For native ETH balances, Multicall3 provides a built-in `getEthBalance(address)` function:
-
-```typescript
-const multicall3Abi = parseAbi([
-  'function getEthBalance(address) view returns (uint256)',
-]);
-
-async function batchNativeBalances(
-  client: PublicClient,
-  addresses: Address[]
-): Promise<Map<Address, bigint>> {
-  const MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11';
-
-  const contracts = addresses.map(addr => ({
-    address: MULTICALL3,
-    abi: multicall3Abi,
-    functionName: 'getEthBalance',
-    args: [addr],
-  }));
-
-  const results = await client.multicall({ contracts });
-
-  const balances = new Map();
-  addresses.forEach((addr, i) => {
-    if (results[i].status === 'success') {
-      balances.set(addr, results[i].result as bigint);
-    }
-  });
-  return balances;
-}
-```
+> **See:** [Balance Aggregation](./Balance-Aggregation.md), Section 4 — for the `getEthBalance` implementation and native ETH batching pattern.
 
 ### 9.4 Strategy 3: Indexer API (Alchemy/Moralis/Covalent)
 
@@ -871,26 +703,7 @@ CREATE TABLE chain_scan_status (
 
 ### 10.3 Scanning Strategy per Chain
 
-```typescript
-interface ChainConfig {
-  chainId: number;
-  name: string;
-  rpcUrl: string;
-  announcerDeployBlock: number;  // ERC5564Announcer deploy block on this chain
-  multicall3Address: Address;    // Same on all chains
-  blockTime: number;             // Avg seconds per block
-  priority: 'high' | 'medium' | 'low';
-}
-
-const SUPPORTED_CHAINS: ChainConfig[] = [
-  { chainId: 1, name: 'Ethereum', priority: 'high', announcerDeployBlock: 18543663, ... },
-  { chainId: 10, name: 'Optimism', priority: 'high', announcerDeployBlock: 111585236, ... },
-  { chainId: 8453, name: 'Base', priority: 'high', announcerDeployBlock: 7813958, ... },
-  { chainId: 42161, name: 'Arbitrum', priority: 'medium', announcerDeployBlock: 151358134, ... },
-  { chainId: 137, name: 'Polygon', priority: 'medium', announcerDeployBlock: 50525025, ... },
-  { chainId: 100, name: 'Gnosis', priority: 'low', announcerDeployBlock: 31219550, ... },
-];
-```
+> **See:** [Event Listener](./Event-Listener.md), Section 13 — "Multi-Chain Indexing Strategies" (specifically Section 13.2 "Unified Contract Address Advantage") for the full `ChainConfig` interface, `SUPPORTED_CHAINS` deployment addresses, and chain-specific priority configurations.
 
 ---
 
@@ -909,6 +722,8 @@ const SUPPORTED_CHAINS: ChainConfig[] = [
 - Plausible deniability — any single stealth address could belong to anyone
 
 ### 11.2 Fluidkey's UX Patterns
+
+> For the full Fluidkey architecture (BIP-32 derivation, server-side scanning, Safe smart accounts), see Section 4.
 
 **New Address Per Payment:**
 Each time someone resolves `username.fkey.eth`, a new stealth address is returned. The user shares this ENS name as their payment identifier. From the user's perspective, they have one "address" (their ENS) but infinite receiving addresses.
@@ -1067,50 +882,17 @@ async function executeConsolidation(plan: ConsolidationPlan) {
 
 ### 13.1 Fluidkey Recovery Model
 
-Fluidkey's recovery is deterministic because all stealth addresses are derived from the viewing key via BIP-32:
+Fluidkey's recovery is deterministic because all stealth addresses are derived from the viewing key via BIP-32. The process iterates through derivation indices, predicts Safe addresses via CREATE2, and checks balances until a gap limit of consecutive empty addresses is reached.
 
-1. User signs the key generation message → derives spending + viewing keys
-2. From the viewing key, the BIP-32 node is derived at `m/5564'/0'`
-3. Starting from index 0, iterate through derivation indices
-4. For each index, derive the stealth EOA → predict the Safe address
-5. Check if the predicted address has balance on any supported chain
-6. Continue until N consecutive empty addresses are found (gap limit)
+> **See:** [Stealth Private Key Recovery & Wallet Injection](./Stealth-Private-Key-Recovery-Wallet-Injection.md), Section 5 — for the full Fluidkey recovery flow, BIP-32 key hierarchy, `recoverAllAccounts` implementation, counterfactual Safe address prediction, and SARA recovery tool.
 
-**Open-Source Recovery (SARA):**
-Fluidkey provides an independent recovery interface at `recovery.fluidkey.com` built on the open-source `@fluidkey/stealth-account-kit`. Multiple independent recovery interfaces exist, ensuring funds are never locked even if Fluidkey disappears.
+**Gap limit comparison (wallet-management-specific):**
 
-```typescript
-// Recovery pseudocode using stealth-account-kit
-async function recoverAllAccounts(signature: Hex): Promise<StealthAccount[]> {
-  const { spendingPrivateKey, viewingPrivateKey } = generateKeysFromSignature(signature);
-  const viewingNode = extractViewingPrivateKeyNode(viewingPrivateKey);
-
-  const accounts: StealthAccount[] = [];
-  let consecutiveEmpty = 0;
-  const GAP_LIMIT = 20;
-
-  for (let n = 0; consecutiveEmpty < GAP_LIMIT; n++) {
-    const ephemeralKey = generateEphemeralPrivateKey(viewingNode, n, 0);
-    const stealthAddresses = generateStealthAddresses(ephemeralKey, [spendingPublicKey]);
-    const safeAddress = await predictStealthSafeAddressWithClient(client, {
-      stealthSigner: stealthAddresses[0],
-      safeVersion: '1.3.0',
-      threshold: 1,
-      useDefaultAddress: true,
-      chainId: 0,
-    });
-
-    const hasBalance = await checkBalanceAnyChain(safeAddress);
-    if (hasBalance) {
-      accounts.push({ address: safeAddress, index: n, ... });
-      consecutiveEmpty = 0;
-    } else {
-      consecutiveEmpty++;
-    }
-  }
-  return accounts;
-}
-```
+| Approach | Gap Limit | Rationale |
+|----------|-----------|-----------|
+| Fluidkey | 20 consecutive empty indices | BIP-32 sequential derivation |
+| Umbra | All announcements scanned | No sequential order to exploit |
+| Custom | Configurable per user | Power users may want deeper scans |
 
 ### 13.2 Umbra Recovery Model
 
@@ -1123,16 +905,6 @@ Umbra recovery requires scanning all historical announcements:
 5. For each match, derive the stealth private key and check on-chain balance
 
 This is slower than Fluidkey's approach because it requires scanning all announcements on all chains. View tags reduce the computational cost but scanning bandwidth remains a bottleneck.
-
-### 13.3 Gap Limit and Performance
-
-The "gap limit" concept (borrowed from BIP-44 HD wallets) determines when to stop scanning:
-
-| Approach | Gap Limit | Rationale |
-|----------|-----------|-----------|
-| Fluidkey | 20 consecutive empty indices | BIP-32 sequential derivation |
-| Umbra | All announcements scanned | No sequential order to exploit |
-| Custom | Configurable per user | Power users may want deeper scans |
 
 ---
 

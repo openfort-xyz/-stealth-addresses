@@ -540,6 +540,8 @@ Fluidkey can receive BTC, USDC, and USDT from 10 additional chains (Bitcoin, Tro
 
 ### 5.2 Umbra: Client-Side Scanning Model
 
+> **See also:** [Event Listener](./Event-Listener.md), Sections 4 and 7 for the detailed Umbra scanning architecture (subgraph queries, ViewTag filtering, caching strategy) and ScopeLift SDK integration used in the client-side scanning model.
+
 Umbra takes a fundamentally different approach — fully client-side with no server-side balance aggregation.
 
 **Architecture:**

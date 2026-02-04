@@ -16,22 +16,16 @@ Production systems have converged on two dominant storage philosophies: **derive
 
 The dual-key architecture creates a deliberate asymmetry in storage requirements:
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    KEY STORAGE SECURITY MODEL                           │
-├─────────────────────────────┬───────────────────────────────────────────┤
-│     SPENDING KEY (p_spend)  │       VIEWING KEY (p_view)                │
-├─────────────────────────────┼───────────────────────────────────────────┤
-│ Compromise = CRITICAL       │ Compromise = HIGH                         │
-│ All stealth funds lost      │ Transaction visibility exposed            │
-│ Irrecoverable               │ Funds remain safe                         │
-│ NEVER on server             │ CAN be on server (delegated scanning)     │
-│ NEVER in plaintext at rest  │ Can be shared with trusted parser         │
-│ Minimal exposure time       │ Extended exposure acceptable              │
-│ Client-only, memory-only    │ Server-side storage for BIP-32 node       │
-│ if derive-on-demand         │ is a valid production pattern             │
-└─────────────────────────────┴───────────────────────────────────────────┘
-```
+> **See:** [Creation of Key Pairs](./Creation-Key-Pairs.md), Section 3 — "The Dual-Key Architecture" for the full dual-key diagram and protocol-level explanation of spending vs. viewing key roles.
+
+The storage-specific security implications of this split are:
+
+| | Spending Key (`p_spend`) | Viewing Key (`p_view`) |
+|---|---|---|
+| **Compromise impact** | CRITICAL — all stealth funds lost, irrecoverable | HIGH — transaction visibility exposed, funds safe |
+| **Server storage** | NEVER | CAN be delegated (BIP-32 node) |
+| **Plaintext at rest** | NEVER | Acceptable for trusted parser |
+| **Exposure window** | Minimal (memory-only, session-only) | Extended exposure acceptable |
 
 This asymmetry is the design rationale behind the dual-key system itself. As the Umbra protocol documentation states: users can give their viewing key to third-party scanning services that alert them of received funds, without giving those services access to their funds. The separation of concerns is the foundation of the entire storage architecture.
 
@@ -401,7 +395,9 @@ The viewing key's lower sensitivity level enables a unique storage pattern: serv
 
 ### 4.1 Fluidkey's BIP-32 Viewing Node Delegation
 
-Fluidkey's production implementation shares a BIP-32 derived *node* (not the raw viewing key) with their server:
+Fluidkey's production implementation shares a BIP-32 derived *node* (not the raw viewing key) with their server.
+
+> **See:** [Creation of Key Pairs](./Creation-Key-Pairs.md), Section 4.2 — "BIP-32 Hierarchical Derivation" for the full derivation path structure (`m/5564'/N'/c0'/c1'/0'/p'/n'`) and ENSIP-11 coinType encoding.
 
 ```typescript
 import { HDKey } from '@scure/bip32';
@@ -713,47 +709,9 @@ The Dedaub audit of Fluidkey identified the most significant threat to web-based
 
 ## 9. Production System Comparison
 
-```
-┌─────────────────────┬───────────────────────┬───────────────────────┐
-│ Dimension           │ Umbra Cash            │ Fluidkey              │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Spending key        │ Derive-on-demand      │ Derive-on-demand      │
-│ storage             │ Never persisted       │ Never persisted       │
-│                     │ Memory only per       │ Discarded after Safe  │
-│                     │ session               │ creation              │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Viewing key         │ Derive-on-demand      │ BIP-32 node shared    │
-│ storage             │ Never persisted       │ with Fluidkey server  │
-│                     │ Memory only           │ Server stores xprv    │
-│                     │                       │ node at m/5564'/0'    │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Signature           │ "Sign this message    │ Fluidkey-specific     │
-│ message             │ to access your Umbra  │ key generation        │
-│                     │ account." + chainId   │ message               │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Re-signing          │ Every session on      │ Every session when    │
-│ frequency           │ Receive/Setup pages   │ sending funds out     │
-│                     │ (lazy evaluation)     │                       │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Server trust        │ No server trust       │ Viewing key node on   │
-│ requirements        │ required              │ server — trust for    │
-│                     │                       │ tx privacy, not funds │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Payment detection   │ Client-side scanning  │ Server-side scanning  │
-│ model               │ (user must be active) │ (real-time push       │
-│                     │                       │ notifications)        │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Recovery            │ Re-sign same message  │ Re-sign same message  │
-│ mechanism           │ + chain rescan        │ + deterministic       │
-│                     │                       │ replay via BIP-32     │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Audited             │ Multiple audits       │ Dedaub audit (May '24)│
-│                     │ ScopeLift team        │ Stealth Account Kit   │
-├─────────────────────┼───────────────────────┼───────────────────────┤
-│ Open source kit     │ umbra-js              │ @fluidkey/stealth-    │
-│                     │                       │ account-kit           │
-└─────────────────────┴───────────────────────┴───────────────────────┘
-```
+> **See:** [Creation of Key Pairs](./Creation-Key-Pairs.md), Section 6 — "Production System Comparison" for the full Umbra vs. Fluidkey vs. ScopeLift comparison tables covering key derivation methods, storage lifecycles, recovery mechanisms, and audit status.
+
+**Storage-specific summary:** Umbra uses pure derive-on-demand (memory-only, re-sign each session). Fluidkey uses a hybrid: spending key derive-on-demand + BIP-32 viewing node delegated to server for real-time scanning. Both approaches are detailed in Section 3 above.
 
 ---
 

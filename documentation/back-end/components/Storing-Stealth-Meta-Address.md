@@ -220,21 +220,9 @@ Fluidkey Offchain Resolver Contract:
 
 ### 4.3 BIP-32 Derivation Path
 
-Fluidkey uses a BIP-32 hierarchical deterministic (HD) derivation scheme to generate stealth addresses deterministically:
+Fluidkey uses a BIP-32 hierarchical deterministic (HD) derivation scheme to generate stealth addresses deterministically.
 
-```
-Derivation path:
-  m / 5564' / 0' / c0' / c1' / 0' / p' / n'
-
-Where:
-  5564'  = ERC-5564 purpose (stealth addresses)
-  0'     = Account index
-  c0'    = Upper 31 bits of coinType (per ENSIP-11)
-  c1'    = Lower 31 bits of coinType (currently chainId 0 for cross-chain)
-  0'     = Key type (0 = spending, 1 = viewing)
-  p'     = Payment counter (incremented per query)
-  n'     = Sub-counter (for multiple addresses per payment)
-```
+> **See:** [Creation of Key Pairs](./Creation-Key-Pairs.md), Section 4.2 — "BIP-32 Hierarchical Derivation" for the full derivation path structure (`m/5564'/N'/c0'/c1'/0'/p'/n'`), ENSIP-11 coinType encoding, and multi-chain derivation details.
 
 **Critical trust model:** Fluidkey holds the BIP-32 viewing node at `m/5564'/N'`, which allows the server to:
 - Generate stealth addresses on behalf of the user
@@ -473,6 +461,8 @@ if (metaAddress && metaAddress !== '0x') {
 ---
 
 ## 7. Production Comparison: Umbra vs. Fluidkey
+
+> **See also:** [Creation of Key Pairs](./Creation-Key-Pairs.md), Section 6 — "Production System Comparison" for the key generation and derivation comparison between Umbra, Fluidkey, and ScopeLift SDK.
 
 ### 7.1 Architecture Comparison
 

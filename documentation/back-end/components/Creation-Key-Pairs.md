@@ -417,58 +417,7 @@ async function generateStealthKeys(
 
 ### 5.3 Fluidkey BIP-32 Viewing Key Node Extraction
 
-```typescript
-import { HDKey } from '@scure/bip32';
-import { keccak256, toBytes, Hex } from 'viem';
-
-function extractViewingPrivateKeyNode(
-  viewingPrivateKey: Hex,
-  nodeIndex: number = 0
-): HDKey {
-  // Convert the viewing private key into a BIP-32 master key
-  // This creates a new HD tree rooted at the viewing key
-  const viewKeyBytes = toBytes(viewingPrivateKey);
-
-  // Create HD key from the viewing private key as seed
-  // The viewing private key acts as entropy for the BIP-32 tree
-  const masterKey = HDKey.fromMasterSeed(viewKeyBytes);
-
-  // Derive the shared node: m/5564'/N'
-  // 5564 = ERC-5564 standard identifier
-  // N = node index (0 for current Fluidkey implementation)
-  const viewingNode = masterKey
-    .derive(`m/5564'/${nodeIndex}'`);
-
-  return viewingNode;
-}
-
-function generateEphemeralPrivateKey(
-  viewingKeyNode: HDKey,
-  chainId: number = 0,
-  addressIndex: number = 0
-): Hex {
-  // Compute ENSIP-11 coinType from chainId
-  const coinType = (0x80000000 | chainId) >>> 0;
-
-  // Split coinType into two BIP-32 compatible indices
-  // Each must be < 2^31 for hardened derivation
-  const c0 = (coinType >>> 16) & 0x7FFF;
-  const c1 = coinType & 0xFFFF;
-
-  // Split address index similarly
-  const p = (addressIndex >>> 16) & 0x7FFF;
-  const n = addressIndex & 0xFFFF;
-
-  // Derive: m/5564'/N'/c0'/c1'/0'/p'/n'
-  // (viewingKeyNode is already at m/5564'/N')
-  const leaf = viewingKeyNode
-    .derive(`m/${c0}'/${c1}'/0'/${p}'/${n}'`);
-
-  if (!leaf.privateKey) throw new Error('Failed to derive ephemeral key');
-
-  return `0x${Buffer.from(leaf.privateKey).toString('hex')}` as Hex;
-}
-```
+> **See:** [Storing Key Pairs](./Storing-Key-Pairs.md), Section 4.1 — "Fluidkey's BIP-32 Viewing Node Delegation" for the canonical `extractViewingPrivateKeyNode()` implementation and `generateEphemeralPrivateKey()` function, including server-side delegation details and threat model.
 
 ### 5.4 Stealth Meta-Address Parsing
 
@@ -663,42 +612,6 @@ In this mode, the same key serves both spending and viewing. This eliminates the
 
 ## 9. Recovery Mechanisms
 
-### 9.1 Signature-Based Recovery (Umbra/Fluidkey)
-
-Recovery is straightforward: the user re-signs the same deterministic message with the same wallet. Since ECDSA signatures with RFC 6979 are deterministic, the same signature is produced, yielding the same stealth keys.
-
-```
-Recovery flow:
-1. User connects original wallet
-2. Prompt: "Sign this message to recover your stealth keys"
-3. Wallet signs → produces identical signature
-4. Hash signature halves → same spending and viewing keys
-5. Scan chain for announcements → recover all stealth addresses
-```
-
-**Recovery conditions:**
-- User must have access to the original wallet (or its seed phrase)
-- For Fluidkey: user must also remember their PIN
-- If wallet is lost but seed phrase is available: import seed phrase into new wallet, re-sign
-
-### 9.2 Full Chain Rescan Recovery
-
-If local metadata (announcement cache, scan position) is lost, a full chain rescan can recover all stealth addresses:
-
-```
-1. Re-derive viewing key from wallet signature
-2. Fetch ALL Announcement events from ERC5564Announcer since deployment
-3. For each announcement:
-   a. Extract view tag from metadata[0]
-   b. Compute expected view tag from viewing key + ephemeral pubkey
-   c. If view tags match (1/256 probability): perform full derivation
-   d. If stealth address matches: this payment belongs to user
-4. Derive spending key → compute stealth private key for each match
-```
-
-**Performance impact of view tag:**
-- Without view tag: every announcement requires full ECDH (1× ecMUL + 1× hash + 1× ecADD + address derivation)
-- With view tag: 255/256 announcements require only (1× ecMUL + 1× hash + 1× byte comparison)
-- Net speedup: ~6× faster scanning
+> **See:** [Storing Key Pairs](./Storing-Key-Pairs.md), Section 7 — "Recovery Mechanisms" for the full specification of signature-based recovery (RFC 6979), encrypted backup recovery, and multi-cloud key splitting patterns.
 
 ---

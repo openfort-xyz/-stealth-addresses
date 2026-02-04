@@ -265,6 +265,8 @@ The frontend queries each subgraph independently and aggregates results client-s
 
 ### 4.6 Reorg Handling
 
+> See Section 10 for the full reorg handling specification with confirmation depth tables and recovery procedures.
+
 The Graph handles chain reorganizations automatically:
 - Subgraph maintains internal block pointer
 - On reorg detection, subgraph rolls back to last confirmed block and re-indexes
@@ -829,7 +831,7 @@ Umbra's advanced caching (2024) specifically addressed the problem of returning 
 
 **After:** The app stores the last scanned block number in the browser's local storage. On return, it only fetches announcements from `lastScannedBlock + 1` to `currentBlock`, then performs viewTag filtering only on the new batch.
 
-This single optimization yielded the 6-12× improvement (60 seconds → 5-10 seconds) for returning users.
+This single optimization yielded the 6-12× improvement for returning users (see Section 4.5 for benchmarks).
 
 ---
 
